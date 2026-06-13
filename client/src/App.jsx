@@ -44,7 +44,7 @@ function Sidebar({ articles, selectedId, onSelect, user, onLogin, onLogout, onOp
           <>
             <span className={`user-role role-${user.role}`}>{user.role}</span>
             <span className="user-name">{user.username}</span>
-            {(user.role === 'editor' || user.role === 'admin') && (
+            {(user.role === 'editor' || user.role === 'admin' || user.role === 'journalist') && (
               <button className="logout-btn" onClick={onOpenEditor} title="Redacție">✎</button>
             )}
             <button className="logout-btn" onClick={onLogout}>Ieși</button>
@@ -175,7 +175,7 @@ export default function App() {
   if (view === 'editor') return (
     <div className="layout">
       <Sidebar articles={articles} selectedId={null} onSelect={() => {}} user={user} onLogin={() => setView('login')} onLogout={handleLogout} onOpenEditor={() => setView('editor')} />
-      <main className="main"><Editor onBack={() => setView('app')} /></main>
+      <main className="main"><Editor user={user} onBack={() => setView('app')} /></main>
     </div>
   )
 

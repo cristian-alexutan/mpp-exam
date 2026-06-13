@@ -1,17 +1,32 @@
 const express = require('express');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/auth');
 const { touchArticleDate } = require('../utils/date');
+
+function canEditArticle(db, user, articleId) {
+  if (!user) return false;
+  if (user.role === 'editor' || user.role === 'admin') return true;
+  if (user.role === 'journalist') {
+    return !!db.prepare(
+      'SELECT 1 FROM article_journalists WHERE article_id = ? AND journalist_id = ?'
+    ).get(articleId, user.id);
+  }
+  return false;
+}
 
 // Mounted at /api/articles/:articleId/paragraphs
 const createRouter = express.Router({ mergeParams: true });
 
-createRouter.post('/', requireAuth, requireRole('editor', 'admin'), (req, res) => {
+createRouter.post('/', requireAuth, (req, res) => {
+  const db = req.db;
+  if (!canEditArticle(db, req.user, req.params.articleId)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   const { text } = req.body;
   if (!text || typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'Paragraph text is required' });
   }
 
-  const db = req.db;
   const article = db.prepare('SELECT id FROM articles WHERE id = ?').get(req.params.articleId);
   if (!article) return res.status(404).json({ error: 'Article not found' });
 
@@ -30,7 +45,7 @@ createRouter.post('/', requireAuth, requireRole('editor', 'admin'), (req, res) =
 // Mounted at /api/paragraphs
 const crudRouter = express.Router();
 
-crudRouter.put('/:id', requireAuth, requireRole('editor', 'admin'), (req, res) => {
+crudRouter.put('/:id', requireAuth, (req, res) => {
   const { text } = req.body;
   if (!text || typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'Paragraph text is required' });
@@ -40,16 +55,24 @@ crudRouter.put('/:id', requireAuth, requireRole('editor', 'admin'), (req, res) =
   const para = db.prepare('SELECT id, article_id FROM paragraphs WHERE id = ?').get(req.params.id);
   if (!para) return res.status(404).json({ error: 'Not found' });
 
+  if (!canEditArticle(db, req.user, para.article_id)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   db.prepare('UPDATE paragraphs SET text = ? WHERE id = ?').run(text.trim(), req.params.id);
   touchArticleDate(db, para.article_id);
 
   res.json({ id: Number(req.params.id), text: text.trim() });
 });
 
-crudRouter.delete('/:id', requireAuth, requireRole('editor', 'admin'), (req, res) => {
+crudRouter.delete('/:id', requireAuth, (req, res) => {
   const db = req.db;
   const para = db.prepare('SELECT id, article_id FROM paragraphs WHERE id = ?').get(req.params.id);
   if (!para) return res.status(404).json({ error: 'Not found' });
+
+  if (!canEditArticle(db, req.user, para.article_id)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
 
   db.prepare('DELETE FROM paragraphs WHERE id = ?').run(req.params.id);
   touchArticleDate(db, para.article_id);

@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
 import { apiFetch } from './api'
 
-const STATUSES = ['started', 'pending', 'finished']
-
 function ImageList({ images, paragraphId, onDelete }) {
   return (
     <div className="image-list">
@@ -16,7 +14,7 @@ function ImageList({ images, paragraphId, onDelete }) {
   )
 }
 
-function CommentSection({ paragraphId, initialComments }) {
+function CommentSection({ paragraphId, initialComments, readOnly }) {
   const [comments, setComments] = useState(initialComments || [])
   const [text, setText] = useState('')
   const [error, setError] = useState('')
@@ -47,6 +45,8 @@ function CommentSection({ paragraphId, initialComments }) {
     setComments(c => c.filter(c => c.id !== id))
   }
 
+  if (comments.length === 0 && readOnly) return null
+
   return (
     <div className="comment-section">
       <p className="comment-section-title">Comentarii redacție ({comments.length})</p>
@@ -55,27 +55,31 @@ function CommentSection({ paragraphId, initialComments }) {
           <div className="comment-meta">
             <span className="comment-author">{c.author}</span>
             <span className="comment-date">{c.created_at}</span>
-            <button className="comment-delete" onClick={() => deleteComment(c.id)}>✕</button>
+            {!readOnly && (
+              <button className="comment-delete" onClick={() => deleteComment(c.id)}>✕</button>
+            )}
           </div>
           <p className="comment-text">{c.text}</p>
         </div>
       ))}
-      <div className="comment-add">
-        <input
-          className="editor-input comment-input"
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder="Adaugă comentariu..."
-          onKeyDown={e => e.key === 'Enter' && addComment()}
-        />
-        {error && <p className="field-error">{error}</p>}
-        <button className="editor-btn" onClick={addComment}>Adaugă</button>
-      </div>
+      {!readOnly && (
+        <div className="comment-add">
+          <input
+            className="editor-input comment-input"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Adaugă comentariu..."
+            onKeyDown={e => e.key === 'Enter' && addComment()}
+          />
+          {error && <p className="field-error">{error}</p>}
+          <button className="editor-btn" onClick={addComment}>Adaugă</button>
+        </div>
+      )}
     </div>
   )
 }
 
-function ParagraphRow({ para, articleId, onUpdate, onDelete }) {
+function ParagraphRow({ para, articleId, onUpdate, onDelete, isJournalist }) {
   const [editing, setEditing] = useState(false)
   const [text, setText] = useState(para.text)
   const [textError, setTextError] = useState('')
@@ -160,12 +164,18 @@ function ParagraphRow({ para, articleId, onUpdate, onDelete }) {
         <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} style={{ display: 'none' }} />
       </label>
 
-      <CommentSection paragraphId={para.id} initialComments={para.comments || []} />
+      {para.comments !== undefined && (
+        <CommentSection
+          paragraphId={para.id}
+          initialComments={para.comments}
+          readOnly={isJournalist}
+        />
+      )}
     </div>
   )
 }
 
-export default function ArticleEditor({ articleId: initialId, onBack }) {
+export default function ArticleEditor({ articleId: initialId, onBack, user }) {
   const [article, setArticle] = useState(null)
   const [title, setTitle] = useState('')
   const [titleError, setTitleError] = useState('')
@@ -176,9 +186,12 @@ export default function ArticleEditor({ articleId: initialId, onBack }) {
   const [saving, setSaving] = useState(false)
 
   const isNew = !initialId
+  const isJournalist = user?.role === 'journalist'
 
   useEffect(() => {
-    apiFetch('/api/users/journalists').then(r => r.json()).then(setJournalists)
+    if (!isJournalist) {
+      apiFetch('/api/users/journalists').then(r => r.json()).then(setJournalists)
+    }
     if (!isNew) {
       apiFetch(`/api/articles/${initialId}`).then(r => r.json()).then(a => {
         setArticle(a)
@@ -295,46 +308,58 @@ export default function ArticleEditor({ articleId: initialId, onBack }) {
 
       <div className="editor-section">
         <h3 className="editor-section-title">{isNew && !article ? 'Articol nou' : 'Detalii articol'}</h3>
-        <div className="editor-field">
-          <label className="editor-label">Titlu</label>
-          <input className="editor-input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Titlul articolului" />
-          {titleError && <p className="field-error">{titleError}</p>}
-        </div>
+
+        {isJournalist ? (
+          <p className="editor-date-display">
+            <span className="editor-label">Titlu: </span>{article?.title}
+          </p>
+        ) : (
+          <div className="editor-field">
+            <label className="editor-label">Titlu</label>
+            <input className="editor-input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Titlul articolului" />
+            {titleError && <p className="field-error">{titleError}</p>}
+          </div>
+        )}
+
         {article && (
           <p className="editor-date-display">
             <span className="editor-label">Ultima modificare: </span>{article.date}
           </p>
         )}
 
-        {!article ? (
-          <button className="editor-btn" onClick={createArticle} disabled={saving}>
-            {saving ? 'Se creează...' : 'Creează articol'}
-          </button>
-        ) : (
-          <button className="editor-btn" onClick={saveHeader} disabled={saving}>
-            {saving ? 'Se salvează...' : 'Salvează titlu'}
-          </button>
+        {!isJournalist && (
+          !article ? (
+            <button className="editor-btn" onClick={createArticle} disabled={saving}>
+              {saving ? 'Se creează...' : 'Creează articol'}
+            </button>
+          ) : (
+            <button className="editor-btn" onClick={saveHeader} disabled={saving}>
+              {saving ? 'Se salvează...' : 'Salvează titlu'}
+            </button>
+          )
         )}
       </div>
 
       {article && (
         <>
-          <div className="editor-section">
-            <h3 className="editor-section-title">Status</h3>
-            <div className="status-row">
-              {['started', 'pending', 'finished'].map(s => (
-                <button
-                  key={s}
-                  className={`status-btn ${article.status === s ? 'active' : ''} status-${s}`}
-                  onClick={() => changeStatus(s)}
-                >
-                  {s === 'started' ? 'Început' : s === 'pending' ? 'În așteptare' : 'Finalizat'}
-                </button>
-              ))}
+          {!isJournalist && (
+            <div className="editor-section">
+              <h3 className="editor-section-title">Status</h3>
+              <div className="status-row">
+                {['started', 'pending', 'finished'].map(s => (
+                  <button
+                    key={s}
+                    className={`status-btn ${article.status === s ? 'active' : ''} status-${s}`}
+                    onClick={() => changeStatus(s)}
+                  >
+                    {s === 'started' ? 'Început' : s === 'pending' ? 'În așteptare' : 'Finalizat'}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {journalists.length > 0 && (
+          {!isJournalist && journalists.length > 0 && (
             <div className="editor-section">
               <h3 className="editor-section-title">Jurnaliști asignați</h3>
               <div className="journalist-list">
@@ -366,6 +391,7 @@ export default function ArticleEditor({ articleId: initialId, onBack }) {
                 articleId={article.id}
                 onUpdate={updateParagraph}
                 onDelete={deleteParagraph}
+                isJournalist={isJournalist}
               />
             ))}
             <div className="new-para">

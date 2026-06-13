@@ -11,6 +11,10 @@ function isEditor(user) {
   return user && EDITOR_ROLES.includes(user.role);
 }
 
+function isJournalist(user) {
+  return user && user.role === 'journalist';
+}
+
 function validateTitle(title) {
   if (!title || typeof title !== 'string' || !title.trim()) return 'Title is required';
   if (title.trim().length > 200) return 'Title must be under 200 characters';
@@ -46,25 +50,62 @@ function getArticleWithRelations(db, id, includeComments = false) {
   return article;
 }
 
-// GET /api/articles — editors see all, others see only finished
+// GET /api/articles
+// ?mine=true  — journalist only: returns only their assigned articles (for edit list)
 router.get('/', optionalAuth, (req, res) => {
-  const query = isEditor(req.user)
-    ? 'SELECT id, title, date, status FROM articles ORDER BY id DESC'
-    : "SELECT id, title, date, status FROM articles WHERE status = 'finished' ORDER BY id DESC";
-  res.json(req.db.prepare(query).all());
+  const db = req.db;
+
+  if (isEditor(req.user)) {
+    return res.json(db.prepare('SELECT id, title, date, status FROM articles ORDER BY id DESC').all());
+  }
+
+  if (isJournalist(req.user)) {
+    if (req.query.mine === 'true') {
+      return res.json(db.prepare(`
+        SELECT a.id, a.title, a.date, a.status FROM articles a
+        JOIN article_journalists aj ON aj.article_id = a.id
+        WHERE aj.journalist_id = ?
+        ORDER BY a.id DESC
+      `).all(req.user.id));
+    }
+    return res.json(db.prepare(`
+      SELECT DISTINCT id, title, date, status FROM articles
+      WHERE status = 'finished'
+         OR id IN (SELECT article_id FROM article_journalists WHERE journalist_id = ?)
+      ORDER BY id DESC
+    `).all(req.user.id));
+  }
+
+  res.json(db.prepare("SELECT id, title, date, status FROM articles WHERE status = 'finished' ORDER BY id DESC").all());
 });
 
-// GET /api/articles/:id — editors see any status, others only finished
+// GET /api/articles/:id
 router.get('/:id', optionalAuth, (req, res) => {
-  const article = getArticleWithRelations(req.db, req.params.id, isEditor(req.user));
+  const db = req.db;
+  const editorAccess = isEditor(req.user);
+  const journalistAccess = isJournalist(req.user);
+  const includeComments = editorAccess || journalistAccess;
+
+  const article = getArticleWithRelations(db, req.params.id, includeComments);
   if (!article) return res.status(404).json({ error: 'Not found' });
-  if (article.status !== 'finished' && !isEditor(req.user)) {
-    return res.status(404).json({ error: 'Not found' });
+
+  if (article.status !== 'finished') {
+    if (editorAccess) {
+      // always allowed
+    } else if (journalistAccess) {
+      const assigned = db.prepare(
+        'SELECT 1 FROM article_journalists WHERE article_id = ? AND journalist_id = ?'
+      ).get(req.params.id, req.user.id);
+      if (!assigned) return res.status(404).json({ error: 'Not found' });
+    } else {
+      return res.status(404).json({ error: 'Not found' });
+    }
   }
+
   res.json(article);
 });
 
-// POST /api/articles — date is always today
+// POST /api/articles — editor+ only
 router.post('/', requireAuth, requireRole('editor', 'admin'), (req, res) => {
   const error = validateTitle(req.body.title);
   if (error) return res.status(400).json({ error });
@@ -78,7 +119,7 @@ router.post('/', requireAuth, requireRole('editor', 'admin'), (req, res) => {
   res.status(201).json({ id, title, date, status: 'started', paragraphs: [], journalists: [] });
 });
 
-// PUT /api/articles/:id — updates title, resets date to today
+// PUT /api/articles/:id — editor+ only
 router.put('/:id', requireAuth, requireRole('editor', 'admin'), (req, res) => {
   const error = validateTitle(req.body.title);
   if (error) return res.status(400).json({ error });
@@ -92,7 +133,7 @@ router.put('/:id', requireAuth, requireRole('editor', 'admin'), (req, res) => {
   res.json({ id: Number(req.params.id), title, date });
 });
 
-// PATCH /api/articles/:id/status — editor+, updates date
+// PATCH /api/articles/:id/status — editor+ only
 router.patch('/:id/status', requireAuth, requireRole('editor', 'admin'), (req, res) => {
   const { status } = req.body;
   if (!VALID_STATUSES.includes(status)) {
@@ -107,7 +148,7 @@ router.patch('/:id/status', requireAuth, requireRole('editor', 'admin'), (req, r
   res.json({ id: Number(req.params.id), status, date });
 });
 
-// PUT /api/articles/:id/journalists — editor+, updates date
+// PUT /api/articles/:id/journalists — editor+ only
 router.put('/:id/journalists', requireAuth, requireRole('editor', 'admin'), (req, res) => {
   const { journalistIds } = req.body;
   if (!Array.isArray(journalistIds)) return res.status(400).json({ error: 'journalistIds must be an array' });
