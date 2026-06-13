@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { articles } from './data/articles'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 function Logo() {
@@ -35,7 +34,7 @@ function Sidebar({ articles, selectedId, onSelect }) {
           <button
             key={a.id}
             className={`article-item${selectedId === a.id ? ' active' : ''}`}
-            onClick={() => onSelect(a)}
+            onClick={() => onSelect(a.id)}
           >
             <span className="article-item-title">{a.title}</span>
             <span className="article-item-date">{a.date}</span>
@@ -70,7 +69,19 @@ function Landing() {
   )
 }
 
-function ArticleDetail({ article, onBack }) {
+function ArticleDetail({ id, onBack }) {
+  const [article, setArticle] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`/api/articles/${id}`)
+      .then(r => r.json())
+      .then(data => { setArticle(data); setLoading(false) })
+  }, [id])
+
+  if (loading) return <div className="loading">Se încarcă...</div>
+
   return (
     <article className="detail">
       <button className="back-btn" onClick={onBack}>← Înapoi</button>
@@ -88,18 +99,25 @@ function ArticleDetail({ article, onBack }) {
 }
 
 export default function App() {
-  const [selected, setSelected] = useState(null)
+  const [articles, setArticles] = useState([])
+  const [selectedId, setSelectedId] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/articles')
+      .then(r => r.json())
+      .then(setArticles)
+  }, [])
 
   return (
     <div className="layout">
       <Sidebar
         articles={articles}
-        selectedId={selected?.id}
-        onSelect={setSelected}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
       />
       <main className="main">
-        {selected
-          ? <ArticleDetail article={selected} onBack={() => setSelected(null)} />
+        {selectedId
+          ? <ArticleDetail id={selectedId} onBack={() => setSelectedId(null)} />
           : <Landing />
         }
       </main>

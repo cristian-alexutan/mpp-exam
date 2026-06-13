@@ -229,3 +229,10 @@ body {
   line-height: 1.8;
   color: var(--text);
 }
+
+.loading {
+  color: var(--text-dim);
+  font-family: monospace;
+  font-size: 13px;
+  padding: 48px 64px;
+}
