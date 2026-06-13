@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Login from './Login'
 import Register from './Register'
+import Editor from './Editor'
 import './App.css'
 
 const ROLE_COLOR = {
@@ -28,7 +29,7 @@ function Logo() {
   )
 }
 
-function Sidebar({ articles, selectedId, onSelect, user, onLogin, onLogout }) {
+function Sidebar({ articles, selectedId, onSelect, user, onLogin, onLogout, onOpenEditor }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header" style={{ background: user ? ROLE_COLOR[user.role] : undefined }}>
@@ -43,6 +44,9 @@ function Sidebar({ articles, selectedId, onSelect, user, onLogin, onLogout }) {
           <>
             <span className={`user-role role-${user.role}`}>{user.role}</span>
             <span className="user-name">{user.username}</span>
+            {(user.role === 'editor' || user.role === 'admin') && (
+              <button className="logout-btn" onClick={onOpenEditor} title="Redacție">✎</button>
+            )}
             <button className="logout-btn" onClick={onLogout}>Ieși</button>
           </>
         ) : (
@@ -57,7 +61,10 @@ function Sidebar({ articles, selectedId, onSelect, user, onLogin, onLogout }) {
             onClick={() => onSelect(a.id)}
           >
             <span className="article-item-title">{a.title}</span>
-            <span className="article-item-date">{a.date}</span>
+            <div className="article-item-meta">
+              <span className="article-item-date">{a.date}</span>
+              <span className={`article-status-dot status-${a.status}`} title={a.status} />
+            </div>
           </button>
         ))}
       </nav>
@@ -68,15 +75,9 @@ function Sidebar({ articles, selectedId, onSelect, user, onLogin, onLogout }) {
 function Landing() {
   return (
     <div className="landing">
-      <div className="landing-logo">
-        <Logo />
-        <Logo />
-        <Logo />
-      </div>
+      <div className="landing-logo"><Logo /><Logo /><Logo /></div>
       <h2 className="landing-headline">Teoria Transpirației</h2>
-      <p className="landing-tagline">
-        Jurnalism independent. Surse anonime. Adevăruri incomode.
-      </p>
+      <p className="landing-tagline">Jurnalism independent. Surse anonime. Adevăruri incomode.</p>
       <p className="landing-desc">
         Într-o lume în care mass-media mainstream repetă același script, noi punem
         întrebările pe care altora le e frică să le rostească. Selectați un articol
@@ -107,13 +108,26 @@ function ArticleDetail({ id, onBack }) {
       <button className="back-btn" onClick={onBack}>← Înapoi</button>
       <p className="detail-date">{article.date}</p>
       <h2 className="detail-title">{article.title}</h2>
-      <p className="detail-summary">{article.summary}</p>
       <hr className="detail-divider" />
       <div className="detail-body">
-        {article.body.split('\n\n').map((para, i) => (
-          <p key={i}>{para}</p>
+        {article.paragraphs.map((para, i) => (
+          <div key={para.id}>
+            <p className={i === 0 ? 'detail-summary' : ''}>{para.text}</p>
+            {para.images.length > 0 && (
+              <div className="detail-images">
+                {para.images.map(img => (
+                  <img key={img.id} src={`/uploads/${img.path}`} alt="" className="detail-image" />
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </div>
+      {article.journalists.length > 0 && (
+        <p className="detail-journalists">
+          Jurnaliști: {article.journalists.map(j => j.username).join(', ')}
+        </p>
+      )}
     </article>
   )
 }
@@ -127,10 +141,10 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null)
 
   useEffect(() => {
-    fetch('/api/articles')
-      .then(r => r.json())
-      .then(setArticles)
-  }, [])
+    if (view === 'app') {
+      fetch('/api/articles').then(r => r.json()).then(setArticles)
+    }
+  }, [view])
 
   function handleLogin(userData) {
     localStorage.setItem('tt_user', JSON.stringify(userData))
@@ -144,12 +158,14 @@ export default function App() {
     setSelectedId(null)
   }
 
-  if (view === 'login') {
-    return <Login onLogin={handleLogin} onGoRegister={() => setView('register')} onBack={() => setView('app')} />
-  }
-  if (view === 'register') {
-    return <Register onRegister={handleLogin} onGoLogin={() => setView('login')} onBack={() => setView('app')} />
-  }
+  if (view === 'login') return <Login onLogin={handleLogin} onGoRegister={() => setView('register')} onBack={() => setView('app')} />
+  if (view === 'register') return <Register onRegister={handleLogin} onGoLogin={() => setView('login')} onBack={() => setView('app')} />
+  if (view === 'editor') return (
+    <div className="layout">
+      <Sidebar articles={articles} selectedId={null} onSelect={() => {}} user={user} onLogin={() => setView('login')} onLogout={handleLogout} onOpenEditor={() => setView('editor')} />
+      <main className="main"><Editor onBack={() => setView('app')} /></main>
+    </div>
+  )
 
   return (
     <div className="layout">
@@ -160,6 +176,7 @@ export default function App() {
         user={user}
         onLogin={() => setView('login')}
         onLogout={handleLogout}
+        onOpenEditor={() => setView('editor')}
       />
       <main className="main">
         {selectedId
