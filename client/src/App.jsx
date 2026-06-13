@@ -156,6 +156,7 @@ export default function App() {
     localStorage.removeItem('tt_user')
     setUser(null)
     setSelectedId(null)
+    setView('app')
   }
 
   useEffect(() => {
