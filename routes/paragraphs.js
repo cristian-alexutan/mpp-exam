@@ -1,5 +1,5 @@
 const express = require('express');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 const { touchArticleDate } = require('../utils/date');
 
 function canEditArticle(db, user, articleId) {
@@ -65,7 +65,7 @@ crudRouter.put('/:id', requireAuth, (req, res) => {
   res.json({ id: Number(req.params.id), text: text.trim() });
 });
 
-crudRouter.patch('/:id/move', requireAuth, (req, res) => {
+crudRouter.patch('/:id/move', requireAuth, requireRole('editor', 'admin'), (req, res) => {
   const { direction } = req.body;
   if (direction !== 'up' && direction !== 'down') {
     return res.status(400).json({ error: 'direction must be up or down' });
@@ -74,10 +74,6 @@ crudRouter.patch('/:id/move', requireAuth, (req, res) => {
   const db = req.db;
   const para = db.prepare('SELECT id, article_id, order_index FROM paragraphs WHERE id = ?').get(req.params.id);
   if (!para) return res.status(404).json({ error: 'Not found' });
-
-  if (!canEditArticle(db, req.user, para.article_id)) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
 
   const adjacent = direction === 'up'
     ? db.prepare('SELECT id, order_index FROM paragraphs WHERE article_id = ? AND order_index < ? ORDER BY order_index DESC LIMIT 1').get(para.article_id, para.order_index)

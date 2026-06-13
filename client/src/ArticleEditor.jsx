@@ -156,9 +156,13 @@ function ParagraphRow({ para, articleId, onUpdate, onDelete, onMove, isFirst, is
     <div className="para-row">
       <div className="para-header">
         <div className="para-order-btns">
-          <button className="para-order-btn" onClick={() => onMove(para.id, 'up')} disabled={isFirst} title="Mută sus">▲</button>
+          {!isJournalist && (
+            <button className="para-order-btn" onClick={() => onMove(para.id, 'up')} disabled={isFirst} title="Mută sus">▲</button>
+          )}
           <span className="para-index">§ {para.order_index + 1}</span>
-          <button className="para-order-btn" onClick={() => onMove(para.id, 'down')} disabled={isLast} title="Mută jos">▼</button>
+          {!isJournalist && (
+            <button className="para-order-btn" onClick={() => onMove(para.id, 'down')} disabled={isLast} title="Mută jos">▼</button>
+          )}
         </div>
         <div className="para-actions">
           {!editing && <button className="para-btn" onClick={() => setEditing(true)}>Editează</button>}
