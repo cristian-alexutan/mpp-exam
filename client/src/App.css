@@ -421,6 +421,21 @@ body {
   color: #ff6b6b;
   font-family: monospace;
 }
+.auth-banned {
+  color: #fff;
+  background: #7a0000;
+  border: 1px solid #ff4444;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.ban-message {
+  background: #7a0000;
+  border: 1px solid #ff4444;
+  color: #fff;
+  padding: 12px 16px;
+  font-size: 13px;
+  margin-top: 12px;
+}
 
 .auth-btn {
   background: var(--gold-dim);

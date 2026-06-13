@@ -126,6 +126,7 @@ function UserComments({ articleId, canPost }) {
   const [comments, setComments] = useState([])
   const [text, setText] = useState('')
   const [error, setError] = useState('')
+  const [banned, setBanned] = useState(false)
   const [posting, setPosting] = useState(false)
 
   useEffect(() => {
@@ -149,6 +150,7 @@ function UserComments({ articleId, canPost }) {
       setText('')
     } else {
       const data = await res.json().catch(() => ({}))
+      if (data.banned) setBanned(true)
       setError(data.error || 'Eroare la postare')
     }
   }
@@ -174,20 +176,22 @@ function UserComments({ articleId, canPost }) {
         ))}
       </div>
       {canPost && (
-        <form className="user-comment-form" onSubmit={submit}>
-          <textarea
-            className="user-comment-input"
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder="Lasă un comentariu..."
-            rows={3}
-            maxLength={1000}
-          />
-          {error && <p className="field-error">{error}</p>}
-          <button className="editor-btn" type="submit" disabled={posting}>
-            {posting ? 'Se analizează...' : 'Trimite'}
-          </button>
-        </form>
+        banned
+          ? <div className="ban-message">⛔ {error}</div>
+          : <form className="user-comment-form" onSubmit={submit}>
+              <textarea
+                className="user-comment-input"
+                value={text}
+                onChange={e => setText(e.target.value)}
+                placeholder="Lasă un comentariu..."
+                rows={3}
+                maxLength={1000}
+              />
+              {error && <p className="field-error">{error}</p>}
+              <button className="editor-btn" type="submit" disabled={posting}>
+                {posting ? 'Se analizează...' : 'Trimite'}
+              </button>
+            </form>
       )}
     </div>
   )

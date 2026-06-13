@@ -12,6 +12,13 @@ router.post('/login', (req, res) => {
   if (!user || !bcrypt.compareSync(password, user.password)) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
+  if (user.banned && user.ban_until && new Date(user.ban_until) > new Date()) {
+    const until = new Date(user.ban_until).toLocaleDateString('ro-RO');
+    return res.status(403).json({
+      error: `Contul tău este suspendat până pe ${until}: ${user.ban_reason}`,
+      banned: true,
+    });
+  }
   const token = createSession(user);
   res.json({ id: user.id, username: user.username, role: user.role, token });
 });

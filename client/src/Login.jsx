@@ -17,7 +17,7 @@ export default function Login({ onLogin, onGoRegister, onBack }) {
         body: JSON.stringify({ username, password }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error); return }
+      if (!res.ok) { setError(data.error); setLoading(false); return }
       onLogin(data)
     } catch {
       setError('Conexiune eșuată')
@@ -47,7 +47,7 @@ export default function Login({ onLogin, onGoRegister, onBack }) {
             value={password}
             onChange={e => setPassword(e.target.value)}
           />
-          {error && <p className="auth-error">{error}</p>}
+          {error && <p className={`auth-error${error.includes('suspendat') ? ' auth-banned' : ''}`}>{error}</p>}
           <button className="auth-btn" type="submit" disabled={loading}>
             {loading ? 'Se verifică...' : 'Intră'}
           </button>

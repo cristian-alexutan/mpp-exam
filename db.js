@@ -72,6 +72,10 @@ function setupSchema(db) {
   // Migrations for existing DBs
   try { db.exec("ALTER TABLE comments ADD COLUMN status TEXT NOT NULL DEFAULT 'unresolved'"); } catch {}
   try { db.exec("ALTER TABLE article_comments ADD COLUMN sentiment TEXT"); } catch {}
+  try { db.exec("ALTER TABLE users ADD COLUMN banned INTEGER NOT NULL DEFAULT 0"); } catch {}
+  try { db.exec("ALTER TABLE users ADD COLUMN ban_reason TEXT"); } catch {}
+  try { db.exec("ALTER TABLE users ADD COLUMN ban_until TEXT"); } catch {}
+  try { db.exec("ALTER TABLE article_comments ADD COLUMN vulgarity_checked INTEGER NOT NULL DEFAULT 0"); } catch {}
 
 }
 
