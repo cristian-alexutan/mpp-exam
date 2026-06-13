@@ -47,7 +47,8 @@ function setupSchema(db) {
       text TEXT NOT NULL,
       article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
       created_by INTEGER NOT NULL REFERENCES users(id),
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sentiment TEXT
     );
 
     CREATE TABLE IF NOT EXISTS reactions (
@@ -70,6 +71,7 @@ function setupSchema(db) {
 
   // Migrations for existing DBs
   try { db.exec("ALTER TABLE comments ADD COLUMN status TEXT NOT NULL DEFAULT 'unresolved'"); } catch {}
+  try { db.exec("ALTER TABLE article_comments ADD COLUMN sentiment TEXT"); } catch {}
 
 }
 

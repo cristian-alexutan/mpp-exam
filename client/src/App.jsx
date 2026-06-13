@@ -138,6 +138,9 @@ function UserComments({ articleId, canPost }) {
             <div className="user-comment-meta">
               <span className="user-comment-author">{c.author}</span>
               <span className="user-comment-date">{c.created_at}</span>
+              {c.sentiment && (
+                <span className={`sentiment-badge sentiment-${c.sentiment}`}>{c.sentiment}</span>
+              )}
             </div>
             <p className="user-comment-text">{c.text}</p>
           </div>
@@ -155,7 +158,7 @@ function UserComments({ articleId, canPost }) {
           />
           {error && <p className="field-error">{error}</p>}
           <button className="editor-btn" type="submit" disabled={posting}>
-            {posting ? 'Se trimite...' : 'Trimite'}
+            {posting ? 'Se analizează...' : 'Trimite'}
           </button>
         </form>
       )}
