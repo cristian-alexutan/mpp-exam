@@ -1,5 +1,8 @@
 top 3 lowest points in life
 
+react + vite frontend
+node + express backend
+
 tasks as they were given during the 9 hour "practical exam":
 
 jurnal facultate ziar   
