@@ -589,6 +589,12 @@ body {
   font-family: monospace;
 }
 
+.editor-date-display {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: monospace;
+}
+
 .editor-btn {
   background: var(--gold-dim);
   border: none;

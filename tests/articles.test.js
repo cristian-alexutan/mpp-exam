@@ -108,12 +108,6 @@ describe('POST /api/articles', () => {
     expect(res.status).toBe(400);
   });
 
-  test('rejects missing date', async () => {
-    const res = await request(app).post('/api/articles')
-      .set(authHeader(editorToken))
-      .send({ title: 'Valid Title' });
-    expect(res.status).toBe(400);
-  });
 
   test('rejects title over 200 characters', async () => {
     const res = await request(app).post('/api/articles')

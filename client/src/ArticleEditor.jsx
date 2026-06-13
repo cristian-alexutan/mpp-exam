@@ -147,9 +147,7 @@ function ParagraphRow({ para, articleId, onUpdate, onDelete }) {
 export default function ArticleEditor({ articleId: initialId, onBack }) {
   const [article, setArticle] = useState(null)
   const [title, setTitle] = useState('')
-  const [date, setDate] = useState('')
   const [titleError, setTitleError] = useState('')
-  const [dateError, setDateError] = useState('')
   const [newParaText, setNewParaText] = useState('')
   const [newParaError, setNewParaError] = useState('')
   const [journalists, setJournalists] = useState([])
@@ -163,25 +161,23 @@ export default function ArticleEditor({ articleId: initialId, onBack }) {
       apiFetch(`/api/articles/${initialId}`).then(r => r.json()).then(a => {
         setArticle(a)
         setTitle(a.title)
-        setDate(a.date)
       })
     } else {
       setArticle(null)
     }
   }, [initialId])
 
-  function validateHeader() {
-    let ok = true
-    if (!title.trim()) { setTitleError('Titlul este obligatoriu'); ok = false } else setTitleError('')
-    if (title.trim().length > 200) { setTitleError('Titlul trebuie să aibă sub 200 de caractere'); ok = false }
-    if (!date.trim()) { setDateError('Data este obligatorie'); ok = false } else setDateError('')
-    return ok
+  function validateTitle() {
+    if (!title.trim()) { setTitleError('Titlul este obligatoriu'); return false }
+    if (title.trim().length > 200) { setTitleError('Titlul trebuie să aibă sub 200 de caractere'); return false }
+    setTitleError('')
+    return true
   }
 
   async function createArticle() {
-    if (!validateHeader()) return
+    if (!validateTitle()) return
     setSaving(true)
-    const res = await apiFetch('/api/articles', { method: 'POST', body: { title, date } })
+    const res = await apiFetch('/api/articles', { method: 'POST', body: { title } })
     const data = await res.json()
     if (!res.ok) { setTitleError(data.error); setSaving(false); return }
     setArticle(data)
@@ -189,16 +185,22 @@ export default function ArticleEditor({ articleId: initialId, onBack }) {
   }
 
   async function saveHeader() {
-    if (!validateHeader()) return
+    if (!validateTitle()) return
     setSaving(true)
-    const res = await apiFetch(`/api/articles/${article.id}`, { method: 'PUT', body: { title, date } })
-    if (res.ok) setArticle(a => ({ ...a, title, date }))
+    const res = await apiFetch(`/api/articles/${article.id}`, { method: 'PUT', body: { title } })
+    if (res.ok) {
+      const data = await res.json()
+      setArticle(a => ({ ...a, title: data.title, date: data.date }))
+    }
     setSaving(false)
   }
 
   async function changeStatus(status) {
     const res = await apiFetch(`/api/articles/${article.id}/status`, { method: 'PATCH', body: { status } })
-    if (res.ok) setArticle(a => ({ ...a, status }))
+    if (res.ok) {
+      const data = await res.json()
+      setArticle(a => ({ ...a, status: data.status, date: data.date }))
+    }
   }
 
   async function toggleJournalist(jid) {
@@ -253,11 +255,11 @@ export default function ArticleEditor({ articleId: initialId, onBack }) {
           <input className="editor-input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Titlul articolului" />
           {titleError && <p className="field-error">{titleError}</p>}
         </div>
-        <div className="editor-field">
-          <label className="editor-label">Data</label>
-          <input className="editor-input" value={date} onChange={e => setDate(e.target.value)} placeholder="ex: 12 Iunie 2026" />
-          {dateError && <p className="field-error">{dateError}</p>}
-        </div>
+        {article && (
+          <p className="editor-date-display">
+            <span className="editor-label">Ultima modificare: </span>{article.date}
+          </p>
+        )}
 
         {!article ? (
           <button className="editor-btn" onClick={createArticle} disabled={saving}>
@@ -265,7 +267,7 @@ export default function ArticleEditor({ articleId: initialId, onBack }) {
           </button>
         ) : (
           <button className="editor-btn" onClick={saveHeader} disabled={saving}>
-            {saving ? 'Se salvează...' : 'Salvează'}
+            {saving ? 'Se salvează...' : 'Salvează titlu'}
           </button>
         )}
       </div>
