@@ -28,10 +28,10 @@ function Logo() {
   )
 }
 
-function Sidebar({ articles, selectedId, onSelect, user, onLogout }) {
+function Sidebar({ articles, selectedId, onSelect, user, onLogin, onLogout }) {
   return (
     <aside className="sidebar">
-      <div className="sidebar-header">
+      <div className="sidebar-header" style={{ background: user ? ROLE_COLOR[user.role] : undefined }}>
         <Logo />
         <div className="brand">
           <h1 className="brand-title">Teoria Transpirației</h1>
@@ -39,9 +39,15 @@ function Sidebar({ articles, selectedId, onSelect, user, onLogout }) {
         </div>
       </div>
       <div className="user-bar">
-        <span className={`user-role role-${user.role}`}>{user.role}</span>
-        <span className="user-name">{user.username}</span>
-        <button className="logout-btn" onClick={onLogout}>Ieși</button>
+        {user ? (
+          <>
+            <span className={`user-role role-${user.role}`}>{user.role}</span>
+            <span className="user-name">{user.username}</span>
+            <button className="logout-btn" onClick={onLogout}>Ieși</button>
+          </>
+        ) : (
+          <button className="login-btn" onClick={onLogin}>Intră în cont</button>
+        )}
       </div>
       <nav className="article-list">
         {articles.map(a => (
@@ -59,9 +65,9 @@ function Sidebar({ articles, selectedId, onSelect, user, onLogout }) {
   )
 }
 
-function Landing({ user }) {
+function Landing() {
   return (
-    <div className="landing" style={{ background: ROLE_COLOR[user.role] }}>
+    <div className="landing">
       <div className="landing-logo">
         <Logo />
         <Logo />
@@ -116,34 +122,33 @@ export default function App() {
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('tt_user')) } catch { return null }
   })
-  const [view, setView] = useState('login')
+  const [view, setView] = useState('app')
   const [articles, setArticles] = useState([])
   const [selectedId, setSelectedId] = useState(null)
 
   useEffect(() => {
-    if (user) {
-      fetch('/api/articles')
-        .then(r => r.json())
-        .then(setArticles)
-    }
-  }, [user])
+    fetch('/api/articles')
+      .then(r => r.json())
+      .then(setArticles)
+  }, [])
 
   function handleLogin(userData) {
     localStorage.setItem('tt_user', JSON.stringify(userData))
     setUser(userData)
+    setView('app')
   }
 
   function handleLogout() {
     localStorage.removeItem('tt_user')
     setUser(null)
     setSelectedId(null)
-    setView('login')
   }
 
-  if (!user) {
-    return view === 'login'
-      ? <Login onLogin={handleLogin} onGoRegister={() => setView('register')} />
-      : <Register onRegister={handleLogin} onGoLogin={() => setView('login')} />
+  if (view === 'login') {
+    return <Login onLogin={handleLogin} onGoRegister={() => setView('register')} onBack={() => setView('app')} />
+  }
+  if (view === 'register') {
+    return <Register onRegister={handleLogin} onGoLogin={() => setView('login')} onBack={() => setView('app')} />
   }
 
   return (
@@ -153,12 +158,13 @@ export default function App() {
         selectedId={selectedId}
         onSelect={setSelectedId}
         user={user}
+        onLogin={() => setView('login')}
         onLogout={handleLogout}
       />
       <main className="main">
         {selectedId
           ? <ArticleDetail id={selectedId} onBack={() => setSelectedId(null)} />
-          : <Landing user={user} />
+          : <Landing />
         }
       </main>
     </div>

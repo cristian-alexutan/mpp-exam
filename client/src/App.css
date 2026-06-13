@@ -287,11 +287,24 @@ body {
   border-color: #555;
 }
 
-/* Landing role tint */
-.landing {
-  border-radius: 4px;
-  transition: background 0.3s;
+.login-btn {
+  background: none;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-dim);
+  font-size: 11px;
+  font-family: monospace;
+  padding: 4px 12px;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: color 0.15s, border-color 0.15s;
 }
+
+.login-btn:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
 
 /* Auth pages */
 .auth-page {

@@ -6,7 +6,7 @@ const ROLES = [
   { value: 'editor', label: 'Editor' },
 ]
 
-export default function Register({ onRegister, onGoLogin }) {
+export default function Register({ onRegister, onGoLogin, onBack }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('user')
@@ -71,6 +71,9 @@ export default function Register({ onRegister, onGoLogin }) {
         <p className="auth-switch">
           Ai deja cont?{' '}
           <button className="auth-link" onClick={onGoLogin}>Autentifică-te</button>
+        </p>
+        <p className="auth-switch">
+          <button className="auth-link" onClick={onBack}>← Înapoi fără cont</button>
         </p>
       </div>
     </div>

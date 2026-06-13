@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function Login({ onLogin, onGoRegister }) {
+export default function Login({ onLogin, onGoRegister, onBack }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -55,6 +55,9 @@ export default function Login({ onLogin, onGoRegister }) {
         <p className="auth-switch">
           Nu ai cont?{' '}
           <button className="auth-link" onClick={onGoRegister}>Înregistrează-te</button>
+        </p>
+        <p className="auth-switch">
+          <button className="auth-link" onClick={onBack}>← Înapoi fără cont</button>
         </p>
       </div>
     </div>
