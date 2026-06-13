@@ -891,3 +891,42 @@ body {
 .dashboard-table .col-num { text-align: right; font-family: monospace; }
 .dashboard-table .col-chart { width: 44px; padding: 2px 8px; }
 .dash-title { max-width: 340px; }
+
+/* User comments on articles */
+.user-comments {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.user-comments-title {
+  font-size: 13px;
+  color: var(--gold-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 14px;
+}
+.user-comments-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.user-comments-empty { font-size: 13px; color: var(--text-dim); font-style: italic; }
+.user-comment {
+  border-left: 2px solid var(--border);
+  padding: 6px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.user-comment-meta { display: flex; align-items: center; gap: 10px; }
+.user-comment-author { font-size: 12px; color: var(--gold); font-family: monospace; font-weight: bold; }
+.user-comment-date   { font-size: 11px; color: var(--text-dim); font-family: monospace; }
+.user-comment-text   { font-size: 13px; color: var(--text); line-height: 1.55; }
+.user-comment-form { display: flex; flex-direction: column; gap: 8px; }
+.user-comment-input {
+  background: #111;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: Georgia, serif;
+  font-size: 13px;
+  padding: 8px 10px;
+  resize: vertical;
+  width: 100%;
+}
+.user-comment-input:focus { outline: none; border-color: var(--gold-dim); }

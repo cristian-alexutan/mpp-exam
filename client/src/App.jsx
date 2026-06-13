@@ -95,6 +95,74 @@ function Landing() {
   )
 }
 
+function UserComments({ articleId, canPost }) {
+  const [comments, setComments] = useState([])
+  const [text, setText] = useState('')
+  const [error, setError] = useState('')
+  const [posting, setPosting] = useState(false)
+
+  useEffect(() => {
+    apiFetch(`/api/articles/${articleId}/user-comments`)
+      .then(r => r.ok ? r.json() : [])
+      .then(setComments)
+  }, [articleId])
+
+  async function submit(e) {
+    e.preventDefault()
+    if (!text.trim()) { setError('Comentariul nu poate fi gol'); return }
+    setError('')
+    setPosting(true)
+    const res = await apiFetch(`/api/articles/${articleId}/user-comments`, {
+      method: 'POST', body: { text },
+    })
+    setPosting(false)
+    if (res.ok) {
+      const c = await res.json()
+      setComments(prev => [...prev, c])
+      setText('')
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error || 'Eroare la postare')
+    }
+  }
+
+  return (
+    <div className="user-comments">
+      <h3 className="user-comments-title">Comentarii ({comments.length})</h3>
+      <div className="user-comments-list">
+        {comments.length === 0 && (
+          <p className="user-comments-empty">Fii primul care comentează.</p>
+        )}
+        {comments.map(c => (
+          <div key={c.id} className="user-comment">
+            <div className="user-comment-meta">
+              <span className="user-comment-author">{c.author}</span>
+              <span className="user-comment-date">{c.created_at}</span>
+            </div>
+            <p className="user-comment-text">{c.text}</p>
+          </div>
+        ))}
+      </div>
+      {canPost && (
+        <form className="user-comment-form" onSubmit={submit}>
+          <textarea
+            className="user-comment-input"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Lasă un comentariu..."
+            rows={3}
+            maxLength={1000}
+          />
+          {error && <p className="field-error">{error}</p>}
+          <button className="editor-btn" type="submit" disabled={posting}>
+            {posting ? 'Se trimite...' : 'Trimite'}
+          </button>
+        </form>
+      )}
+    </div>
+  )
+}
+
 function ArticleDetail({ id, user, onBack }) {
   const [article, setArticle] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -161,6 +229,7 @@ function ArticleDetail({ id, user, onBack }) {
           👎 <span className="reaction-count">{article.dislikes}</span>
         </button>
       </div>
+      {user && <UserComments articleId={id} canPost={user.role === 'user'} />}
     </article>
   )
 }

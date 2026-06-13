@@ -10,6 +10,7 @@ const userRoutes = require('./routes/users');
 const { createRouter: commentCreateRouter, commentRouter } = require('./routes/comments');
 const reactionRouter = require('./routes/reactions');
 const adminRouter = require('./routes/admin');
+const articleCommentRouter = require('./routes/article-comments');
 
 function createApp(db) {
   const app = express();
@@ -30,6 +31,7 @@ function createApp(db) {
   app.use('/api/paragraphs/:paragraphId/comments', commentCreateRouter);
   app.use('/api/comments', commentRouter);
   app.use('/api/articles/:articleId/react', reactionRouter);
+  app.use('/api/articles/:articleId/user-comments', articleCommentRouter);
   app.use('/api/admin', adminRouter);
 
   return app;

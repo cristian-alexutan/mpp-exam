@@ -42,6 +42,14 @@ function setupSchema(db) {
       PRIMARY KEY (article_id, journalist_id)
     );
 
+    CREATE TABLE IF NOT EXISTS article_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      text TEXT NOT NULL,
+      article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+      created_by INTEGER NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS reactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
