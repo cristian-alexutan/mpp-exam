@@ -1,6 +1,6 @@
-may have been the worst day of my life in recent years
+top 3 lowest points in life
 
-tasks as they were given during exam day:
+tasks as they were given during the 9 hour "practical exam":
 
 jurnal facultate ziar   
 0\:  
