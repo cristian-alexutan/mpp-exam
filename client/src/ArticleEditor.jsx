@@ -35,6 +35,17 @@ function CommentSection({ paragraphId, initialComments, readOnly }) {
     }
   }
 
+  async function resolveComment(id, currentStatus) {
+    const res = await apiFetch(`/api/comments/${id}/resolve`, { method: 'PATCH' })
+    if (res.ok) {
+      const data = await res.json()
+      setComments(c => c.map(c => c.id === id ? { ...c, status: data.status } : c))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error || 'Eroare la actualizare status')
+    }
+  }
+
   async function deleteComment(id) {
     const res = await apiFetch(`/api/comments/${id}`, { method: 'DELETE' })
     if (!res.ok) {
@@ -51,17 +62,30 @@ function CommentSection({ paragraphId, initialComments, readOnly }) {
     <div className="comment-section">
       <p className="comment-section-title">Comentarii redacție ({comments.length})</p>
       {comments.map(c => (
-        <div key={c.id} className="comment-item">
+        <div key={c.id} className={`comment-item${c.status === 'resolved' ? ' comment-resolved' : ''}`}>
           <div className="comment-meta">
             <span className="comment-author">{c.author}</span>
             <span className="comment-date">{c.created_at}</span>
+            <span className={`comment-status-badge ${c.status === 'resolved' ? 'resolved' : 'unresolved'}`}>
+              {c.status === 'resolved' ? 'Rezolvat' : 'Nerezolvat'}
+            </span>
             {!readOnly && (
-              <button className="comment-delete" onClick={() => deleteComment(c.id)}>✕</button>
+              <>
+                <button
+                  className={`comment-resolve-btn ${c.status === 'resolved' ? 'unresolve' : 'resolve'}`}
+                  onClick={() => resolveComment(c.id, c.status)}
+                  title={c.status === 'resolved' ? 'Marchează ca nerezolvat' : 'Marchează ca rezolvat'}
+                >
+                  {c.status === 'resolved' ? '↩' : '✓'}
+                </button>
+                <button className="comment-delete" onClick={() => deleteComment(c.id)}>✕</button>
+              </>
             )}
           </div>
           <p className="comment-text">{c.text}</p>
         </div>
       ))}
+      {error && <p className="field-error">{error}</p>}
       {!readOnly && (
         <div className="comment-add">
           <input
@@ -71,7 +95,6 @@ function CommentSection({ paragraphId, initialComments, readOnly }) {
             placeholder="Adaugă comentariu..."
             onKeyDown={e => e.key === 'Enter' && addComment()}
           />
-          {error && <p className="field-error">{error}</p>}
           <button className="editor-btn" onClick={addComment}>Adaugă</button>
         </div>
       )}
@@ -79,7 +102,7 @@ function CommentSection({ paragraphId, initialComments, readOnly }) {
   )
 }
 
-function ParagraphRow({ para, articleId, onUpdate, onDelete, isJournalist }) {
+function ParagraphRow({ para, articleId, onUpdate, onDelete, onMove, isFirst, isLast, isJournalist }) {
   const [editing, setEditing] = useState(false)
   const [text, setText] = useState(para.text)
   const [textError, setTextError] = useState('')
@@ -132,7 +155,11 @@ function ParagraphRow({ para, articleId, onUpdate, onDelete, isJournalist }) {
   return (
     <div className="para-row">
       <div className="para-header">
-        <span className="para-index">§ {para.order_index + 1}</span>
+        <div className="para-order-btns">
+          <button className="para-order-btn" onClick={() => onMove(para.id, 'up')} disabled={isFirst} title="Mută sus">▲</button>
+          <span className="para-index">§ {para.order_index + 1}</span>
+          <button className="para-order-btn" onClick={() => onMove(para.id, 'down')} disabled={isLast} title="Mută jos">▼</button>
+        </div>
         <div className="para-actions">
           {!editing && <button className="para-btn" onClick={() => setEditing(true)}>Editează</button>}
           <button className="para-btn danger" onClick={() => onDelete(para.id)}>Șterge</button>
@@ -279,6 +306,25 @@ export default function ArticleEditor({ articleId: initialId, onBack, user }) {
     }
   }
 
+  async function moveParagraph(paraId, direction) {
+    const res = await apiFetch(`/api/paragraphs/${paraId}/move`, { method: 'PATCH', body: { direction } })
+    if (res.ok) {
+      setArticle(a => {
+        const paras = a.paragraphs.map(p => ({ ...p }))
+        const idx = paras.findIndex(p => p.id === paraId)
+        const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+        const tmp = paras[idx].order_index
+        paras[idx].order_index = paras[swapIdx].order_index
+        paras[swapIdx].order_index = tmp
+        paras.sort((a, b) => a.order_index - b.order_index)
+        return { ...a, paragraphs: paras }
+      })
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setActionError(data.error || 'Eroare la mutare paragraf')
+    }
+  }
+
   function updateParagraph(paraId, newText, newImages) {
     setArticle(a => ({
       ...a,
@@ -384,13 +430,16 @@ export default function ArticleEditor({ articleId: initialId, onBack, user }) {
 
           <div className="editor-section">
             <h3 className="editor-section-title">Paragrafe</h3>
-            {article.paragraphs.map(para => (
+            {article.paragraphs.map((para, i) => (
               <ParagraphRow
                 key={para.id}
                 para={para}
                 articleId={article.id}
                 onUpdate={updateParagraph}
                 onDelete={deleteParagraph}
+                onMove={moveParagraph}
+                isFirst={i === 0}
+                isLast={i === article.paragraphs.length - 1}
                 isJournalist={isJournalist}
               />
             ))}

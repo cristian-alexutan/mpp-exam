@@ -33,7 +33,7 @@ function getArticleWithRelations(db, id, includeComments = false) {
     para.images = db.prepare('SELECT id, path FROM images WHERE paragraph_id = ?').all(para.id);
     if (includeComments) {
       para.comments = db.prepare(`
-        SELECT c.id, c.text, c.created_at, u.username as author
+        SELECT c.id, c.text, c.created_at, c.status, u.username as author
         FROM comments c JOIN users u ON u.id = c.created_by
         WHERE c.paragraph_id = ? ORDER BY c.created_at
       `).all(para.id);
@@ -140,11 +140,25 @@ router.patch('/:id/status', requireAuth, requireRole('editor', 'admin'), (req, r
     return res.status(400).json({ error: `Status must be one of: ${VALID_STATUSES.join(', ')}` });
   }
 
-  const article = req.db.prepare('SELECT id FROM articles WHERE id = ?').get(req.params.id);
+  const db = req.db;
+  const article = db.prepare('SELECT id FROM articles WHERE id = ?').get(req.params.id);
   if (!article) return res.status(404).json({ error: 'Not found' });
 
+  if (status === 'finished') {
+    const { count } = db.prepare(`
+      SELECT COUNT(*) as count FROM comments c
+      JOIN paragraphs p ON p.id = c.paragraph_id
+      WHERE p.article_id = ? AND c.status = 'unresolved'
+    `).get(req.params.id);
+    if (count > 0) {
+      return res.status(400).json({
+        error: `Nu se poate finaliza: există ${count} comentari${count === 1 ? 'u' : 'i'} nerezolvat${count === 1 ? '' : 'e'}`
+      });
+    }
+  }
+
   const date = romanianDate();
-  req.db.prepare('UPDATE articles SET status = ?, date = ? WHERE id = ?').run(status, date, req.params.id);
+  db.prepare('UPDATE articles SET status = ?, date = ? WHERE id = ?').run(status, date, req.params.id);
   res.json({ id: Number(req.params.id), status, date });
 });
 

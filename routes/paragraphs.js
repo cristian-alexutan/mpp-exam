@@ -65,6 +65,33 @@ crudRouter.put('/:id', requireAuth, (req, res) => {
   res.json({ id: Number(req.params.id), text: text.trim() });
 });
 
+crudRouter.patch('/:id/move', requireAuth, (req, res) => {
+  const { direction } = req.body;
+  if (direction !== 'up' && direction !== 'down') {
+    return res.status(400).json({ error: 'direction must be up or down' });
+  }
+
+  const db = req.db;
+  const para = db.prepare('SELECT id, article_id, order_index FROM paragraphs WHERE id = ?').get(req.params.id);
+  if (!para) return res.status(404).json({ error: 'Not found' });
+
+  if (!canEditArticle(db, req.user, para.article_id)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const adjacent = direction === 'up'
+    ? db.prepare('SELECT id, order_index FROM paragraphs WHERE article_id = ? AND order_index < ? ORDER BY order_index DESC LIMIT 1').get(para.article_id, para.order_index)
+    : db.prepare('SELECT id, order_index FROM paragraphs WHERE article_id = ? AND order_index > ? ORDER BY order_index ASC LIMIT 1').get(para.article_id, para.order_index);
+
+  if (!adjacent) return res.status(400).json({ error: 'Cannot move in that direction' });
+
+  db.prepare('UPDATE paragraphs SET order_index = ? WHERE id = ?').run(adjacent.order_index, para.id);
+  db.prepare('UPDATE paragraphs SET order_index = ? WHERE id = ?').run(para.order_index, adjacent.id);
+  touchArticleDate(db, para.article_id);
+
+  res.json({ success: true });
+});
+
 crudRouter.delete('/:id', requireAuth, (req, res) => {
   const db = req.db;
   const para = db.prepare('SELECT id, article_id FROM paragraphs WHERE id = ?').get(req.params.id);

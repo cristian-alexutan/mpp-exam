@@ -663,6 +663,14 @@ body {
   justify-content: space-between;
 }
 
+.para-order-btns { display: flex; align-items: center; gap: 4px; }
+.para-order-btn {
+  background: none; border: 1px solid var(--border); color: var(--text-dim);
+  font-size: 9px; padding: 1px 5px; cursor: pointer; line-height: 1;
+  transition: color 0.15s;
+}
+.para-order-btn:hover:not(:disabled) { color: var(--gold); border-color: var(--gold-dim); }
+.para-order-btn:disabled { opacity: 0.25; cursor: default; }
 .para-index { font-size: 11px; color: var(--text-dim); font-family: monospace; }
 
 .para-actions { display: flex; gap: 6px; }
@@ -769,6 +777,20 @@ body {
   background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 10px; padding: 0;
 }
 .comment-delete:hover { color: #f88; }
+.comment-resolve-btn {
+  background: none; border: 1px solid var(--border); color: var(--text-dim);
+  cursor: pointer; font-size: 10px; padding: 1px 5px; line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+.comment-resolve-btn.resolve:hover { color: #8f8; border-color: rgba(0,160,0,0.4); }
+.comment-resolve-btn.unresolve:hover { color: #fa8; border-color: rgba(200,120,0,0.4); }
+.comment-status-badge {
+  font-size: 9px; font-family: monospace; padding: 1px 5px;
+  border-radius: 2px; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.comment-status-badge.unresolved { background: rgba(180,0,0,0.15); color: #f88; }
+.comment-status-badge.resolved   { background: rgba(0,140,0,0.15); color: #8d8; }
+.comment-item.comment-resolved { opacity: 0.55; }
 .comment-text { font-size: 12px; color: var(--text); line-height: 1.5; }
 .comment-add { display: flex; flex-direction: column; gap: 4px; }
 .comment-input { font-size: 12px; padding: 6px 8px; }

@@ -19,7 +19,7 @@ createRouter.post('/', requireAuth, requireRole('editor', 'admin'), (req, res) =
   ).run(text.trim(), req.params.paragraphId, req.user.id);
 
   const comment = db.prepare(`
-    SELECT c.id, c.text, c.created_at, u.username as author
+    SELECT c.id, c.text, c.created_at, c.status, u.username as author
     FROM comments c JOIN users u ON u.id = c.created_by
     WHERE c.id = ?
   `).get(id);
@@ -28,13 +28,23 @@ createRouter.post('/', requireAuth, requireRole('editor', 'admin'), (req, res) =
 });
 
 // Mounted at /api/comments
-const deleteRouter = express.Router();
+const commentRouter = express.Router();
 
-deleteRouter.delete('/:id', requireAuth, requireRole('editor', 'admin'), (req, res) => {
+commentRouter.patch('/:id/resolve', requireAuth, requireRole('editor', 'admin'), (req, res) => {
+  const db = req.db;
+  const comment = db.prepare('SELECT id, status FROM comments WHERE id = ?').get(req.params.id);
+  if (!comment) return res.status(404).json({ error: 'Not found' });
+
+  const newStatus = comment.status === 'resolved' ? 'unresolved' : 'resolved';
+  db.prepare('UPDATE comments SET status = ? WHERE id = ?').run(newStatus, req.params.id);
+  res.json({ id: comment.id, status: newStatus });
+});
+
+commentRouter.delete('/:id', requireAuth, requireRole('editor', 'admin'), (req, res) => {
   const comment = req.db.prepare('SELECT id FROM comments WHERE id = ?').get(req.params.id);
   if (!comment) return res.status(404).json({ error: 'Not found' });
   req.db.prepare('DELETE FROM comments WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });
 
-module.exports = { createRouter, deleteRouter };
+module.exports = { createRouter, commentRouter };

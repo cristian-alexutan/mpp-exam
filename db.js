@@ -47,9 +47,15 @@ function setupSchema(db) {
       text TEXT NOT NULL,
       paragraph_id INTEGER NOT NULL REFERENCES paragraphs(id) ON DELETE CASCADE,
       created_by INTEGER NOT NULL REFERENCES users(id),
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      status TEXT NOT NULL DEFAULT 'unresolved'
     );
   `);
+
+  // Migration: add status column to existing DBs that predate it
+  try {
+    db.exec("ALTER TABLE comments ADD COLUMN status TEXT NOT NULL DEFAULT 'unresolved'");
+  } catch {}
 }
 
 function seedData(db) {

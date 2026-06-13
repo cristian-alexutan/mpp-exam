@@ -7,7 +7,7 @@ const articleRoutes = require('./routes/articles');
 const { createRouter: paragraphCreateRouter, crudRouter: paragraphCrudRouter } = require('./routes/paragraphs');
 const { uploadRouter: imageUploadRouter, deleteRouter: imageDeleteRouter } = require('./routes/images');
 const userRoutes = require('./routes/users');
-const { createRouter: commentCreateRouter, deleteRouter: commentDeleteRouter } = require('./routes/comments');
+const { createRouter: commentCreateRouter, commentRouter } = require('./routes/comments');
 
 function createApp(db) {
   const app = express();
@@ -26,7 +26,7 @@ function createApp(db) {
   app.use('/api/images', imageDeleteRouter);
   app.use('/api/users', userRoutes);
   app.use('/api/paragraphs/:paragraphId/comments', commentCreateRouter);
-  app.use('/api/comments', commentDeleteRouter);
+  app.use('/api/comments', commentRouter);
 
   return app;
 }
