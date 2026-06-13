@@ -824,14 +824,34 @@ body {
 .reaction-count { font-size: 12px; font-family: monospace; }
 
 /* Dashboard */
-.dashboard { padding: 32px 40px; max-width: 900px; }
+.dashboard { padding: 32px 40px; max-width: 960px; }
 .dashboard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
 .dashboard-title { font-size: 20px; color: var(--gold); letter-spacing: 0.06em; text-transform: uppercase; }
-.dashboard-totals {
+.dashboard-summary {
   display: flex;
-  gap: 24px;
-  margin-bottom: 28px;
+  align-items: center;
+  gap: 36px;
+  margin-bottom: 32px;
+  padding: 20px 24px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
 }
+.donut-labelled { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.donut-total { font-size: 22px; font-family: monospace; color: var(--text-bright); line-height: 1; }
+.donut-total-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+.donut-legend { display: flex; align-items: center; gap: 4px; font-size: 12px; font-family: monospace; flex-wrap: wrap; justify-content: center; }
+.legend-dot { font-size: 10px; }
+.legend-label { color: var(--text-dim); font-size: 11px; }
+.dashboard-totals { display: flex; gap: 16px; flex-wrap: wrap; }
 .dash-stat {
   display: flex;
   flex-direction: column;
@@ -839,7 +859,7 @@ body {
   background: rgba(255,255,255,0.03);
   border: 1px solid var(--border);
   padding: 16px 28px;
-  min-width: 120px;
+  min-width: 110px;
 }
 .dash-stat-value { font-size: 32px; font-family: monospace; color: var(--text-bright); line-height: 1; }
 .dash-stat-label { font-size: 11px; color: var(--text-dim); margin-top: 6px; text-align: center; }
@@ -862,10 +882,12 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .dashboard-table td {
-  padding: 8px 12px;
+  padding: 6px 12px;
   border-bottom: 1px solid rgba(255,255,255,0.04);
   color: var(--text);
+  vertical-align: middle;
 }
 .dashboard-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
 .dashboard-table .col-num { text-align: right; font-family: monospace; }
-.dash-title { max-width: 380px; }
+.dashboard-table .col-chart { width: 44px; padding: 2px 8px; }
+.dash-title { max-width: 340px; }
