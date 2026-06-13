@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react'
+import Login from './Login'
+import Register from './Register'
 import './App.css'
+
+const ROLE_COLOR = {
+  admin:      'rgba(160, 0, 0, 0.18)',
+  editor:     'rgba(160, 130, 0, 0.18)',
+  journalist: 'rgba(0, 80, 180, 0.18)',
+  user:       'rgba(0, 120, 0, 0.18)',
+}
 
 function Logo() {
   return (
@@ -19,7 +28,7 @@ function Logo() {
   )
 }
 
-function Sidebar({ articles, selectedId, onSelect }) {
+function Sidebar({ articles, selectedId, onSelect, user, onLogout }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -28,6 +37,11 @@ function Sidebar({ articles, selectedId, onSelect }) {
           <h1 className="brand-title">Teoria Transpirației</h1>
           <p className="brand-sub">Adevărul pe care nu vor să-l știi</p>
         </div>
+      </div>
+      <div className="user-bar">
+        <span className={`user-role role-${user.role}`}>{user.role}</span>
+        <span className="user-name">{user.username}</span>
+        <button className="logout-btn" onClick={onLogout}>Ieși</button>
       </div>
       <nav className="article-list">
         {articles.map(a => (
@@ -45,9 +59,9 @@ function Sidebar({ articles, selectedId, onSelect }) {
   )
 }
 
-function Landing() {
+function Landing({ user }) {
   return (
-    <div className="landing">
+    <div className="landing" style={{ background: ROLE_COLOR[user.role] }}>
       <div className="landing-logo">
         <Logo />
         <Logo />
@@ -99,14 +113,38 @@ function ArticleDetail({ id, onBack }) {
 }
 
 export default function App() {
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('tt_user')) } catch { return null }
+  })
+  const [view, setView] = useState('login')
   const [articles, setArticles] = useState([])
   const [selectedId, setSelectedId] = useState(null)
 
   useEffect(() => {
-    fetch('/api/articles')
-      .then(r => r.json())
-      .then(setArticles)
-  }, [])
+    if (user) {
+      fetch('/api/articles')
+        .then(r => r.json())
+        .then(setArticles)
+    }
+  }, [user])
+
+  function handleLogin(userData) {
+    localStorage.setItem('tt_user', JSON.stringify(userData))
+    setUser(userData)
+  }
+
+  function handleLogout() {
+    localStorage.removeItem('tt_user')
+    setUser(null)
+    setSelectedId(null)
+    setView('login')
+  }
+
+  if (!user) {
+    return view === 'login'
+      ? <Login onLogin={handleLogin} onGoRegister={() => setView('register')} />
+      : <Register onRegister={handleLogin} onGoLogin={() => setView('login')} />
+  }
 
   return (
     <div className="layout">
@@ -114,11 +152,13 @@ export default function App() {
         articles={articles}
         selectedId={selectedId}
         onSelect={setSelectedId}
+        user={user}
+        onLogout={handleLogout}
       />
       <main className="main">
         {selectedId
           ? <ArticleDetail id={selectedId} onBack={() => setSelectedId(null)} />
-          : <Landing />
+          : <Landing user={user} />
         }
       </main>
     </div>

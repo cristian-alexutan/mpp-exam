@@ -20,6 +20,8 @@
   },
   "homepage": "https://github.com/cristian-alexutan/mpp-exam#readme",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.10.0",
     "cors": "^2.8.6",
     "express": "^5.2.1"
   }
