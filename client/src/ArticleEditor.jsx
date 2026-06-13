@@ -31,12 +31,20 @@ function CommentSection({ paragraphId, initialComments }) {
       const comment = await res.json()
       setComments(c => [...c, comment])
       setText('')
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error || 'Eroare la adăugare comentariu')
     }
   }
 
   async function deleteComment(id) {
     const res = await apiFetch(`/api/comments/${id}`, { method: 'DELETE' })
-    if (res.ok) setComments(c => c.filter(c => c.id !== id))
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error || 'Eroare la ștergere comentariu')
+      return
+    }
+    setComments(c => c.filter(c => c.id !== id))
   }
 
   return (
@@ -77,7 +85,12 @@ function ParagraphRow({ para, articleId, onUpdate, onDelete }) {
     if (!text.trim()) { setTextError('Textul nu poate fi gol'); return; }
     setTextError('')
     const res = await apiFetch(`/api/paragraphs/${para.id}`, { method: 'PUT', body: { text } })
-    if (res.ok) { onUpdate(para.id, text); setEditing(false) }
+    if (res.ok) {
+      onUpdate(para.id, text); setEditing(false)
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setTextError(data.error || 'Eroare la salvare')
+    }
   }
 
   async function handleImageUpload(e) {
@@ -93,6 +106,9 @@ function ParagraphRow({ para, articleId, onUpdate, onDelete }) {
     if (res.ok) {
       const img = await res.json()
       onUpdate(para.id, null, [...para.images, img])
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error || 'Eroare la încărcare imagine')
     }
     setUploading(false)
     e.target.value = ''
@@ -101,7 +117,12 @@ function ParagraphRow({ para, articleId, onUpdate, onDelete }) {
   async function handleDeleteImage(paragraphId, imageId) {
     if (!confirm('Ștergeți imaginea?')) return
     const res = await apiFetch(`/api/images/${imageId}`, { method: 'DELETE' })
-    if (res.ok) onUpdate(para.id, null, para.images.filter(i => i.id !== imageId))
+    if (res.ok) {
+      onUpdate(para.id, null, para.images.filter(i => i.id !== imageId))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error || 'Eroare la ștergere imagine')
+    }
   }
 
   return (
@@ -150,6 +171,7 @@ export default function ArticleEditor({ articleId: initialId, onBack }) {
   const [titleError, setTitleError] = useState('')
   const [newParaText, setNewParaText] = useState('')
   const [newParaError, setNewParaError] = useState('')
+  const [actionError, setActionError] = useState('')
   const [journalists, setJournalists] = useState([])
   const [saving, setSaving] = useState(false)
 
@@ -191,28 +213,41 @@ export default function ArticleEditor({ articleId: initialId, onBack }) {
     if (res.ok) {
       const data = await res.json()
       setArticle(a => ({ ...a, title: data.title, date: data.date }))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setTitleError(data.error || 'Eroare la salvare titlu')
     }
     setSaving(false)
   }
 
   async function changeStatus(status) {
+    setActionError('')
     const res = await apiFetch(`/api/articles/${article.id}/status`, { method: 'PATCH', body: { status } })
     if (res.ok) {
       const data = await res.json()
       setArticle(a => ({ ...a, status: data.status, date: data.date }))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setActionError(data.error || 'Eroare la schimbare status')
     }
   }
 
   async function toggleJournalist(jid) {
+    setActionError('')
     const current = article.journalists.map(j => j.id)
     const next = current.includes(jid) ? current.filter(id => id !== jid) : [...current, jid]
     const res = await apiFetch(`/api/articles/${article.id}/journalists`, {
       method: 'PUT', body: { journalistIds: next }
     })
-    if (res.ok) setArticle(a => ({
-      ...a,
-      journalists: next.map(id => journalists.find(j => j.id === id)).filter(Boolean)
-    }))
+    if (res.ok) {
+      setArticle(a => ({
+        ...a,
+        journalists: next.map(id => journalists.find(j => j.id === id)).filter(Boolean)
+      }))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setActionError(data.error || 'Eroare la actualizare jurnaliști')
+    }
   }
 
   async function addParagraph() {
@@ -225,6 +260,9 @@ export default function ArticleEditor({ articleId: initialId, onBack }) {
       const para = await res.json()
       setArticle(a => ({ ...a, paragraphs: [...a.paragraphs, para] }))
       setNewParaText('')
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setNewParaError(data.error || 'Eroare la adăugare paragraf')
     }
   }
 
@@ -241,12 +279,19 @@ export default function ArticleEditor({ articleId: initialId, onBack }) {
   async function deleteParagraph(paraId) {
     if (!confirm('Ștergeți paragraful și imaginile sale?')) return
     const res = await apiFetch(`/api/paragraphs/${paraId}`, { method: 'DELETE' })
-    if (res.ok) setArticle(a => ({ ...a, paragraphs: a.paragraphs.filter(p => p.id !== paraId) }))
+    if (res.ok) {
+      setArticle(a => ({ ...a, paragraphs: a.paragraphs.filter(p => p.id !== paraId) }))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setActionError(data.error || 'Eroare la ștergere paragraf')
+    }
   }
 
   return (
     <div className="article-editor">
       <button className="back-btn" onClick={onBack}>← Înapoi la articole</button>
+
+      {actionError && <p className="field-error" style={{ marginBottom: '1rem' }}>{actionError}</p>}
 
       <div className="editor-section">
         <h3 className="editor-section-title">{isNew && !article ? 'Articol nou' : 'Detalii articol'}</h3>

@@ -158,6 +158,17 @@ export default function App() {
     setSelectedId(null)
   }
 
+  useEffect(() => {
+    function onAuthExpired() {
+      localStorage.removeItem('tt_user')
+      setUser(null)
+      setSelectedId(null)
+      setView('login')
+    }
+    window.addEventListener('auth:expired', onAuthExpired)
+    return () => window.removeEventListener('auth:expired', onAuthExpired)
+  }, [])
+
   if (view === 'login') return <Login onLogin={handleLogin} onGoRegister={() => setView('register')} onBack={() => setView('app')} />
   if (view === 'register') return <Register onRegister={handleLogin} onGoLogin={() => setView('login')} onBack={() => setView('app')} />
   if (view === 'editor') return (

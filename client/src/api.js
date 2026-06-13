@@ -7,7 +7,7 @@ function getAuthHeader() {
 
 export async function apiFetch(url, { body, method = 'GET', headers = {}, ...opts } = {}) {
   const isFormData = body instanceof FormData;
-  return fetch(url, {
+  const res = await fetch(url, {
     method,
     headers: {
       ...getAuthHeader(),
@@ -17,4 +17,8 @@ export async function apiFetch(url, { body, method = 'GET', headers = {}, ...opt
     body: isFormData ? body : (body !== undefined ? JSON.stringify(body) : undefined),
     ...opts,
   });
+  if (res.status === 401) {
+    window.dispatchEvent(new Event('auth:expired'));
+  }
+  return res;
 }
