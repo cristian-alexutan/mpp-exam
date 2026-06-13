@@ -21,7 +21,7 @@ function validateTitle(title) {
   return null;
 }
 
-function getArticleWithRelations(db, id, includeComments = false) {
+function getArticleWithRelations(db, id, includeComments = false, userId = null) {
   const article = db.prepare('SELECT id, title, date, status FROM articles WHERE id = ?').get(id);
   if (!article) return null;
 
@@ -41,6 +41,11 @@ function getArticleWithRelations(db, id, includeComments = false) {
   }
 
   article.paragraphs = paragraphs;
+  article.likes = db.prepare("SELECT COUNT(*) as c FROM reactions WHERE article_id = ? AND type = 'like'").get(id).c;
+  article.dislikes = db.prepare("SELECT COUNT(*) as c FROM reactions WHERE article_id = ? AND type = 'dislike'").get(id).c;
+  article.userReaction = userId
+    ? (db.prepare('SELECT type FROM reactions WHERE article_id = ? AND user_id = ?').get(id, userId)?.type ?? null)
+    : null;
   article.journalists = db.prepare(`
     SELECT u.id, u.username FROM users u
     JOIN article_journalists aj ON aj.journalist_id = u.id
@@ -86,7 +91,7 @@ router.get('/:id', optionalAuth, (req, res) => {
   const journalistAccess = isJournalist(req.user);
   const includeComments = editorAccess || journalistAccess;
 
-  const article = getArticleWithRelations(db, req.params.id, includeComments);
+  const article = getArticleWithRelations(db, req.params.id, includeComments, req.user?.id);
   if (!article) return res.status(404).json({ error: 'Not found' });
 
   if (article.status !== 'finished') {

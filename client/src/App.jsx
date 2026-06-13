@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import Login from './Login'
 import Register from './Register'
 import Editor from './Editor'
+import Dashboard from './Dashboard'
+import { apiFetch } from './api'
 import './App.css'
 
 const ROLE_COLOR = {
@@ -29,7 +31,7 @@ function Logo() {
   )
 }
 
-function Sidebar({ articles, selectedId, onSelect, user, onLogin, onLogout, onOpenEditor }) {
+function Sidebar({ articles, selectedId, onSelect, user, onLogin, onLogout, onOpenEditor, onOpenDashboard }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header" style={{ background: user ? ROLE_COLOR[user.role] : undefined }}>
@@ -44,6 +46,9 @@ function Sidebar({ articles, selectedId, onSelect, user, onLogin, onLogout, onOp
           <>
             <span className={`user-role role-${user.role}`}>{user.role}</span>
             <span className="user-name">{user.username}</span>
+            {user.role === 'admin' && (
+              <button className="logout-btn" onClick={onOpenDashboard} title="Dashboard">⊞</button>
+            )}
             {(user.role === 'editor' || user.role === 'admin' || user.role === 'journalist') && (
               <button className="logout-btn" onClick={onOpenEditor} title="Redacție">✎</button>
             )}
@@ -90,16 +95,26 @@ function Landing() {
   )
 }
 
-function ArticleDetail({ id, onBack }) {
+function ArticleDetail({ id, user, onBack }) {
   const [article, setArticle] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const canReact = user?.role === 'user'
+
   useEffect(() => {
     setLoading(true)
-    fetch(`/api/articles/${id}`)
+    apiFetch(`/api/articles/${id}`)
       .then(r => r.json())
       .then(data => { setArticle(data); setLoading(false) })
   }, [id])
+
+  async function react(type) {
+    const res = await apiFetch(`/api/articles/${id}/react`, { method: 'POST', body: { type } })
+    if (res.ok) {
+      const data = await res.json()
+      setArticle(a => ({ ...a, likes: data.likes, dislikes: data.dislikes, userReaction: data.userReaction }))
+    }
+  }
 
   if (loading) return <div className="loading">Se încarcă...</div>
 
@@ -128,6 +143,24 @@ function ArticleDetail({ id, onBack }) {
           Jurnaliști: {article.journalists.map(j => j.username).join(', ')}
         </p>
       )}
+      <div className="reaction-bar">
+        <button
+          className={`reaction-btn like${article.userReaction === 'like' ? ' active' : ''}`}
+          onClick={() => canReact && react('like')}
+          disabled={!canReact}
+          title={canReact ? 'Apreciez' : ''}
+        >
+          👍 <span className="reaction-count">{article.likes}</span>
+        </button>
+        <button
+          className={`reaction-btn dislike${article.userReaction === 'dislike' ? ' active' : ''}`}
+          onClick={() => canReact && react('dislike')}
+          disabled={!canReact}
+          title={canReact ? 'Nu apreciez' : ''}
+        >
+          👎 <span className="reaction-count">{article.dislikes}</span>
+        </button>
+      </div>
     </article>
   )
 }
@@ -142,7 +175,7 @@ export default function App() {
 
   useEffect(() => {
     if (view === 'app') {
-      fetch('/api/articles').then(r => r.json()).then(setArticles)
+      apiFetch('/api/articles').then(r => r.json()).then(setArticles)
     }
   }, [view])
 
@@ -170,29 +203,38 @@ export default function App() {
     return () => window.removeEventListener('auth:expired', onAuthExpired)
   }, [])
 
+  const sidebarProps = {
+    articles,
+    selectedId,
+    onSelect: setSelectedId,
+    user,
+    onLogin: () => setView('login'),
+    onLogout: handleLogout,
+    onOpenEditor: () => setView('editor'),
+    onOpenDashboard: () => setView('dashboard'),
+  }
+
   if (view === 'login') return <Login onLogin={handleLogin} onGoRegister={() => setView('register')} onBack={() => setView('app')} />
   if (view === 'register') return <Register onRegister={handleLogin} onGoLogin={() => setView('login')} onBack={() => setView('app')} />
   if (view === 'editor') return (
     <div className="layout">
-      <Sidebar articles={articles} selectedId={null} onSelect={() => {}} user={user} onLogin={() => setView('login')} onLogout={handleLogout} onOpenEditor={() => setView('editor')} />
+      <Sidebar {...sidebarProps} selectedId={null} onSelect={() => {}} />
       <main className="main"><Editor user={user} onBack={() => setView('app')} /></main>
+    </div>
+  )
+  if (view === 'dashboard') return (
+    <div className="layout">
+      <Sidebar {...sidebarProps} selectedId={null} onSelect={() => {}} />
+      <main className="main"><Dashboard onBack={() => setView('app')} /></main>
     </div>
   )
 
   return (
     <div className="layout">
-      <Sidebar
-        articles={articles}
-        selectedId={selectedId}
-        onSelect={setSelectedId}
-        user={user}
-        onLogin={() => setView('login')}
-        onLogout={handleLogout}
-        onOpenEditor={() => setView('editor')}
-      />
+      <Sidebar {...sidebarProps} />
       <main className="main">
         {selectedId
-          ? <ArticleDetail id={selectedId} onBack={() => setSelectedId(null)} />
+          ? <ArticleDetail id={selectedId} user={user} onBack={() => setSelectedId(null)} />
           : <Landing />
         }
       </main>

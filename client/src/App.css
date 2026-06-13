@@ -794,3 +794,78 @@ body {
 .comment-text { font-size: 12px; color: var(--text); line-height: 1.5; }
 .comment-add { display: flex; flex-direction: column; gap: 4px; }
 .comment-input { font-size: 12px; padding: 6px 8px; }
+
+/* Reactions */
+.reaction-bar {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.reaction-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  font-family: Georgia, serif;
+}
+.reaction-btn:disabled { cursor: default; }
+.reaction-btn.like:not(:disabled):hover  { color: #8df; border-color: rgba(80,160,255,0.4); }
+.reaction-btn.dislike:not(:disabled):hover { color: #f88; border-color: rgba(200,60,60,0.4); }
+.reaction-btn.like.active  { color: #8df; border-color: rgba(80,160,255,0.5); background: rgba(80,160,255,0.08); }
+.reaction-btn.dislike.active { color: #f88; border-color: rgba(200,60,60,0.5); background: rgba(200,60,60,0.08); }
+.reaction-count { font-size: 12px; font-family: monospace; }
+
+/* Dashboard */
+.dashboard { padding: 32px 40px; max-width: 900px; }
+.dashboard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+.dashboard-title { font-size: 20px; color: var(--gold); letter-spacing: 0.06em; text-transform: uppercase; }
+.dashboard-totals {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.dash-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  padding: 16px 28px;
+  min-width: 120px;
+}
+.dash-stat-value { font-size: 32px; font-family: monospace; color: var(--text-bright); line-height: 1; }
+.dash-stat-label { font-size: 11px; color: var(--text-dim); margin-top: 6px; text-align: center; }
+.like-color { color: #8df; }
+.dislike-color { color: #f88; }
+.dashboard-table-wrap { overflow-x: auto; }
+.dashboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.dashboard-table th {
+  text-align: left;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-family: monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.dashboard-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text);
+}
+.dashboard-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
+.dashboard-table .col-num { text-align: right; font-family: monospace; }
+.dash-title { max-width: 380px; }

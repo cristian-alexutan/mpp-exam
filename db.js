@@ -42,6 +42,14 @@ function setupSchema(db) {
       PRIMARY KEY (article_id, journalist_id)
     );
 
+    CREATE TABLE IF NOT EXISTS reactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type TEXT NOT NULL CHECK(type IN ('like', 'dislike')),
+      UNIQUE(article_id, user_id)
+    );
+
     CREATE TABLE IF NOT EXISTS comments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       text TEXT NOT NULL,
@@ -52,10 +60,9 @@ function setupSchema(db) {
     );
   `);
 
-  // Migration: add status column to existing DBs that predate it
-  try {
-    db.exec("ALTER TABLE comments ADD COLUMN status TEXT NOT NULL DEFAULT 'unresolved'");
-  } catch {}
+  // Migrations for existing DBs
+  try { db.exec("ALTER TABLE comments ADD COLUMN status TEXT NOT NULL DEFAULT 'unresolved'"); } catch {}
+
 }
 
 function seedData(db) {

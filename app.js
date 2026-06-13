@@ -8,6 +8,8 @@ const { createRouter: paragraphCreateRouter, crudRouter: paragraphCrudRouter } =
 const { uploadRouter: imageUploadRouter, deleteRouter: imageDeleteRouter } = require('./routes/images');
 const userRoutes = require('./routes/users');
 const { createRouter: commentCreateRouter, commentRouter } = require('./routes/comments');
+const reactionRouter = require('./routes/reactions');
+const adminRouter = require('./routes/admin');
 
 function createApp(db) {
   const app = express();
@@ -27,6 +29,8 @@ function createApp(db) {
   app.use('/api/users', userRoutes);
   app.use('/api/paragraphs/:paragraphId/comments', commentCreateRouter);
   app.use('/api/comments', commentRouter);
+  app.use('/api/articles/:articleId/react', reactionRouter);
+  app.use('/api/admin', adminRouter);
 
   return app;
 }
