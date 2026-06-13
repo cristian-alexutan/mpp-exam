@@ -338,16 +338,21 @@ export default function ArticleEditor({ articleId: initialId, onBack }) {
             <div className="editor-section">
               <h3 className="editor-section-title">Jurnaliști asignați</h3>
               <div className="journalist-list">
-                {journalists.map(j => (
-                  <label key={j.id} className="journalist-check">
-                    <input
-                      type="checkbox"
-                      checked={article.journalists.some(aj => aj.id === j.id)}
-                      onChange={() => toggleJournalist(j.id)}
-                    />
-                    {j.username}
-                  </label>
-                ))}
+                {journalists.map(j => {
+                  const checked = article.journalists.some(aj => aj.id === j.id)
+                  const atLimit = article.journalists.length >= 2
+                  return (
+                    <label key={j.id} className={`journalist-check${!checked && atLimit ? ' disabled' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={!checked && atLimit}
+                        onChange={() => toggleJournalist(j.id)}
+                      />
+                      {j.username}
+                    </label>
+                  )
+                })}
               </div>
             </div>
           )}

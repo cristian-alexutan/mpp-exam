@@ -645,6 +645,7 @@ body {
   cursor: pointer;
 }
 .journalist-check input { accent-color: var(--gold); }
+.journalist-check.disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Paragraph rows */
 .para-row {

@@ -111,6 +111,7 @@ router.patch('/:id/status', requireAuth, requireRole('editor', 'admin'), (req, r
 router.put('/:id/journalists', requireAuth, requireRole('editor', 'admin'), (req, res) => {
   const { journalistIds } = req.body;
   if (!Array.isArray(journalistIds)) return res.status(400).json({ error: 'journalistIds must be an array' });
+  if (journalistIds.length > 2) return res.status(400).json({ error: 'Maximum 2 journalists per article' });
 
   const article = req.db.prepare('SELECT id FROM articles WHERE id = ?').get(req.params.id);
   if (!article) return res.status(404).json({ error: 'Not found' });
