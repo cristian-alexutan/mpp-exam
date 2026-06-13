@@ -1,26 +1,35 @@
 const express = require('express');
-const { spawnSync } = require('child_process');
+const { execSync } = require('child_process');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
-const VALID_SENTIMENTS = ['positive', 'negative', 'neutral', 'mixed'];
+const VALID_SENTIMENTS = ['positive', 'negative', 'neutral', 'mixed', 'sarcastic'];
 
 function analyzeSentiment(text) {
   try {
-    const prompt =
-      'Classify the sentiment of the following user comment. ' +
-      'Respond with exactly one word — one of: positive, negative, neutral, mixed. ' +
-      'No punctuation, no explanation, just the single word.\n\nComment: ' + text;
+    // Sanitize for safe shell embedding: replace " and control chars
+    const safe = text.replace(/["\r\n`]/g, ' ').trim();
 
-    const result = spawnSync('opencode', ['run', prompt], {
+    const prompt =
+      `Classify the sentiment of this comment with exactly one word from: ` +
+      `positive, negative, neutral, mixed, sarcastic. ` +
+      `Positive = genuinely supportive. Negative = critical or upset. ` +
+      `Neutral = factual or indifferent. Mixed = both positive and negative. ` +
+      `Sarcastic = ironic or mocking tone. ` +
+      `Reply with the single word only, no punctuation. Comment: ${safe}`;
+
+    const output = execSync(`opencode run "${prompt}"`, {
       encoding: 'utf8',
       timeout: 30000,
     });
 
-    if (result.error || result.status !== 0) return null;
-
-    const word = (result.stdout || '').trim().toLowerCase().split(/\s+/)[0].replace(/[^a-z]/g, '');
-    return VALID_SENTIMENTS.includes(word) ? word : null;
-  } catch {
+    // Search the entire output for any valid sentiment word
+    const lower = output.toLowerCase();
+    for (const s of VALID_SENTIMENTS) {
+      if (lower.includes(s)) return s;
+    }
+    return null;
+  } catch (err) {
+    console.error('[sentiment] error:', err.message);
     return null;
   }
 }
@@ -58,6 +67,7 @@ router.post('/', requireAuth, requireRole('user'), (req, res) => {
   if (!article) return res.status(404).json({ error: 'Not found' });
 
   const sentiment = analyzeSentiment(text.trim());
+  console.log('[sentiment]', JSON.stringify(text.trim().slice(0, 60)), '->', sentiment);
 
   const { lastInsertRowid: id } = db.prepare(
     'INSERT INTO article_comments (text, article_id, created_by, sentiment) VALUES (?, ?, ?, ?)'

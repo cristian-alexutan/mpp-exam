@@ -940,7 +940,8 @@ body {
   padding: 1px 6px;
   border-radius: 2px;
 }
-.sentiment-positive { background: rgba(0,160,60,0.15);  color: #6ddd8a; }
-.sentiment-negative { background: rgba(200,40,40,0.15); color: #f88; }
-.sentiment-neutral  { background: rgba(120,120,120,0.15); color: #aaa; }
-.sentiment-mixed    { background: rgba(180,130,0,0.15); color: var(--gold); }
+.sentiment-positive  { background: rgba(0,160,60,0.15);   color: #6ddd8a; }
+.sentiment-negative  { background: rgba(200,40,40,0.15);  color: #f88; }
+.sentiment-neutral   { background: rgba(120,120,120,0.15); color: #aaa; }
+.sentiment-mixed     { background: rgba(180,130,0,0.15);  color: var(--gold); }
+.sentiment-sarcastic { background: rgba(140,60,200,0.15); color: #c89dff; }
