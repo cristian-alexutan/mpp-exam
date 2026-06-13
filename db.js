@@ -41,6 +41,14 @@ function setupSchema(db) {
       journalist_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       PRIMARY KEY (article_id, journalist_id)
     );
+
+    CREATE TABLE IF NOT EXISTS comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      text TEXT NOT NULL,
+      paragraph_id INTEGER NOT NULL REFERENCES paragraphs(id) ON DELETE CASCADE,
+      created_by INTEGER NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 }
 

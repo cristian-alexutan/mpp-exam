@@ -2,25 +2,47 @@ const request = require('supertest');
 const { createTestEnv, authHeader } = require('./helpers');
 
 describe('GET /api/articles', () => {
-  let app;
-  beforeEach(() => ({ app } = createTestEnv()));
+  let app, editorToken, userToken;
+  beforeEach(() => ({ app, editorToken, userToken } = createTestEnv()));
 
-  test('returns article list without auth', async () => {
+  test('public sees only finished articles', async () => {
     const res = await request(app).get('/api/articles');
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.every(a => a.status === 'finished')).toBe(true);
+  });
+
+  test('public list is non-empty (seeded finished articles exist)', async () => {
+    const res = await request(app).get('/api/articles');
     expect(res.body.length).toBeGreaterThan(0);
-    expect(res.body[0]).toHaveProperty('title');
-    expect(res.body[0]).toHaveProperty('date');
-    expect(res.body[0]).toHaveProperty('status');
+  });
+
+  test('editor sees all articles including non-finished', async () => {
+    // Create a started article
+    await request(app).post('/api/articles')
+      .set(authHeader(editorToken)).send({ title: 'Draft', date: '1 Iunie 2026' });
+
+    const editorRes = await request(app).get('/api/articles').set(authHeader(editorToken));
+    const publicRes = await request(app).get('/api/articles');
+
+    expect(editorRes.body.length).toBeGreaterThan(publicRes.body.length);
+    expect(editorRes.body.some(a => a.status === 'started')).toBe(true);
+  });
+
+  test('logged-in regular user sees only finished articles', async () => {
+    await request(app).post('/api/articles')
+      .set(authHeader(editorToken)).send({ title: 'Draft', date: '1 Iunie 2026' });
+
+    const res = await request(app).get('/api/articles').set(authHeader(userToken));
+    expect(res.body.every(a => a.status === 'finished')).toBe(true);
   });
 });
 
 describe('GET /api/articles/:id', () => {
-  let app;
-  beforeEach(() => ({ app } = createTestEnv()));
+  let app, editorToken, userToken;
+  beforeEach(() => ({ app, editorToken, userToken } = createTestEnv()));
 
-  test('returns article with paragraphs and journalists', async () => {
+  test('returns finished article with paragraphs and journalists', async () => {
     const list = await request(app).get('/api/articles');
     const id = list.body[0].id;
     const res = await request(app).get(`/api/articles/${id}`);
@@ -28,6 +50,22 @@ describe('GET /api/articles/:id', () => {
     expect(res.body).toHaveProperty('paragraphs');
     expect(res.body).toHaveProperty('journalists');
     expect(Array.isArray(res.body.paragraphs)).toBe(true);
+  });
+
+  test('public cannot access non-finished article', async () => {
+    const artRes = await request(app).post('/api/articles')
+      .set(authHeader(editorToken)).send({ title: 'Draft', date: '1 Iunie 2026' });
+    const id = artRes.body.id;
+    const res = await request(app).get(`/api/articles/${id}`);
+    expect(res.status).toBe(404);
+  });
+
+  test('editor can access non-finished article', async () => {
+    const artRes = await request(app).post('/api/articles')
+      .set(authHeader(editorToken)).send({ title: 'Draft', date: '1 Iunie 2026' });
+    const res = await request(app).get(`/api/articles/${artRes.body.id}`)
+      .set(authHeader(editorToken));
+    expect(res.status).toBe(200);
   });
 
   test('returns 404 for nonexistent article', async () => {

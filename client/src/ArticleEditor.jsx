@@ -16,6 +16,57 @@ function ImageList({ images, paragraphId, onDelete }) {
   )
 }
 
+function CommentSection({ paragraphId, initialComments }) {
+  const [comments, setComments] = useState(initialComments || [])
+  const [text, setText] = useState('')
+  const [error, setError] = useState('')
+
+  async function addComment() {
+    if (!text.trim()) { setError('Comentariul nu poate fi gol'); return }
+    setError('')
+    const res = await apiFetch(`/api/paragraphs/${paragraphId}/comments`, {
+      method: 'POST', body: { text },
+    })
+    if (res.ok) {
+      const comment = await res.json()
+      setComments(c => [...c, comment])
+      setText('')
+    }
+  }
+
+  async function deleteComment(id) {
+    const res = await apiFetch(`/api/comments/${id}`, { method: 'DELETE' })
+    if (res.ok) setComments(c => c.filter(c => c.id !== id))
+  }
+
+  return (
+    <div className="comment-section">
+      <p className="comment-section-title">Comentarii redacție ({comments.length})</p>
+      {comments.map(c => (
+        <div key={c.id} className="comment-item">
+          <div className="comment-meta">
+            <span className="comment-author">{c.author}</span>
+            <span className="comment-date">{c.created_at}</span>
+            <button className="comment-delete" onClick={() => deleteComment(c.id)}>✕</button>
+          </div>
+          <p className="comment-text">{c.text}</p>
+        </div>
+      ))}
+      <div className="comment-add">
+        <input
+          className="editor-input comment-input"
+          value={text}
+          onChange={e => setText(e.target.value)}
+          placeholder="Adaugă comentariu..."
+          onKeyDown={e => e.key === 'Enter' && addComment()}
+        />
+        {error && <p className="field-error">{error}</p>}
+        <button className="editor-btn" onClick={addComment}>Adaugă</button>
+      </div>
+    </div>
+  )
+}
+
 function ParagraphRow({ para, articleId, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false)
   const [text, setText] = useState(para.text)
@@ -87,6 +138,8 @@ function ParagraphRow({ para, articleId, onUpdate, onDelete }) {
         {uploading ? 'Se încarcă...' : '+ Adaugă imagine'}
         <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} style={{ display: 'none' }} />
       </label>
+
+      <CommentSection paragraphId={para.id} initialComments={para.comments || []} />
     </div>
   )
 }

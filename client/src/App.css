@@ -727,3 +727,41 @@ body {
 
 /* New paragraph area */
 .new-para { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+
+/* Comments */
+.comment-section {
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.comment-section-title {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.comment-item {
+  background: rgba(255,255,255,0.03);
+  border-left: 2px solid var(--border);
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.comment-author { font-size: 11px; color: var(--gold-dim); font-family: monospace; font-weight: bold; }
+.comment-date   { font-size: 10px; color: var(--text-dim); font-family: monospace; flex: 1; }
+.comment-delete {
+  background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 10px; padding: 0;
+}
+.comment-delete:hover { color: #f88; }
+.comment-text { font-size: 12px; color: var(--text); line-height: 1.5; }
+.comment-add { display: flex; flex-direction: column; gap: 4px; }
+.comment-input { font-size: 12px; padding: 6px 8px; }

@@ -1,9 +1,14 @@
 const express = require('express');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requireRole, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
 const VALID_STATUSES = ['started', 'pending', 'finished'];
+const EDITOR_ROLES = ['editor', 'admin'];
+
+function isEditor(user) {
+  return user && EDITOR_ROLES.includes(user.role);
+}
 
 function validateArticleBody({ title, date }) {
   if (!title || typeof title !== 'string' || !title.trim()) return 'Title is required';
@@ -12,7 +17,7 @@ function validateArticleBody({ title, date }) {
   return null;
 }
 
-function getArticleWithRelations(db, id) {
+function getArticleWithRelations(db, id, includeComments = false) {
   const article = db.prepare('SELECT id, title, date, status FROM articles WHERE id = ?').get(id);
   if (!article) return null;
 
@@ -22,6 +27,13 @@ function getArticleWithRelations(db, id) {
 
   for (const para of paragraphs) {
     para.images = db.prepare('SELECT id, path FROM images WHERE paragraph_id = ?').all(para.id);
+    if (includeComments) {
+      para.comments = db.prepare(`
+        SELECT c.id, c.text, c.created_at, u.username as author
+        FROM comments c JOIN users u ON u.id = c.created_by
+        WHERE c.paragraph_id = ? ORDER BY c.created_at
+      `).all(para.id);
+    }
   }
 
   article.paragraphs = paragraphs;
@@ -34,18 +46,21 @@ function getArticleWithRelations(db, id) {
   return article;
 }
 
-// GET /api/articles — public
-router.get('/', (req, res) => {
-  const articles = req.db.prepare(
-    'SELECT id, title, date, status FROM articles ORDER BY id DESC'
-  ).all();
-  res.json(articles);
+// GET /api/articles — editors see all, others see only finished
+router.get('/', optionalAuth, (req, res) => {
+  const query = isEditor(req.user)
+    ? 'SELECT id, title, date, status FROM articles ORDER BY id DESC'
+    : "SELECT id, title, date, status FROM articles WHERE status = 'finished' ORDER BY id DESC";
+  res.json(req.db.prepare(query).all());
 });
 
-// GET /api/articles/:id — public
-router.get('/:id', (req, res) => {
-  const article = getArticleWithRelations(req.db, req.params.id);
+// GET /api/articles/:id — editors see any status, others only finished
+router.get('/:id', optionalAuth, (req, res) => {
+  const article = getArticleWithRelations(req.db, req.params.id, isEditor(req.user));
   if (!article) return res.status(404).json({ error: 'Not found' });
+  if (article.status !== 'finished' && !isEditor(req.user)) {
+    return res.status(404).json({ error: 'Not found' });
+  }
   res.json(article);
 });
 

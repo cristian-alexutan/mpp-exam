@@ -32,4 +32,13 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { createSession, clearSessions, requireAuth, requireRole };
+function optionalAuth(req, res, next) {
+  const auth = req.headers.authorization;
+  if (auth && auth.startsWith('Bearer ')) {
+    const user = sessions.get(auth.slice(7));
+    if (user) req.user = user;
+  }
+  next();
+}
+
+module.exports = { createSession, clearSessions, requireAuth, requireRole, optionalAuth };
