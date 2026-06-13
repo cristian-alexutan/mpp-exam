@@ -181,6 +181,39 @@ body {
   font-family: monospace;
 }
 
+/* Recommendations */
+.recommendations {
+  margin-top: 32px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.recommendations-title {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+.recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.recommendation-item {
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 14px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  transition: border-color 0.15s;
+}
+.recommendation-item:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
 /* Article detail */
 .detail {
   max-width: 680px;

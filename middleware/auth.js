@@ -1,15 +1,18 @@
-const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
-const sessions = new Map();
+const JWT_SECRET = process.env.JWT_SECRET || 'tt-secret-dev-key-2024';
+const JWT_EXPIRES = '7d';
 
 function createSession(user) {
-  const token = crypto.randomUUID();
-  sessions.set(token, { id: user.id, username: user.username, role: user.role });
-  return token;
+  return jwt.sign(
+    { id: user.id, username: user.username, role: user.role },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES }
+  );
 }
 
 function clearSessions() {
-  sessions.clear();
+  // no-op: JWT is stateless; kept for test compatibility
 }
 
 function requireAuth(req, res, next) {
@@ -17,10 +20,12 @@ function requireAuth(req, res, next) {
   if (!auth || !auth.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  const user = sessions.get(auth.slice(7));
-  if (!user) return res.status(401).json({ error: 'Invalid or expired session' });
-  req.user = user;
-  next();
+  try {
+    req.user = jwt.verify(auth.slice(7), JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ error: 'Invalid or expired session' });
+  }
 }
 
 function requireRole(...roles) {
@@ -35,8 +40,9 @@ function requireRole(...roles) {
 function optionalAuth(req, res, next) {
   const auth = req.headers.authorization;
   if (auth && auth.startsWith('Bearer ')) {
-    const user = sessions.get(auth.slice(7));
-    if (user) req.user = user;
+    try {
+      req.user = jwt.verify(auth.slice(7), JWT_SECRET);
+    } catch {}
   }
   next();
 }

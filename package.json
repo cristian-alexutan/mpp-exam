@@ -10,7 +10,9 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["**/tests/**/*.test.js"]
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
   },
   "repository": {
     "type": "git",
@@ -29,7 +31,9 @@
     "better-sqlite3": "^12.10.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "multer": "^2.1.1"
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "selfsigned": "^5.5.0"
   },
   "devDependencies": {
     "jest": "^30.4.2",

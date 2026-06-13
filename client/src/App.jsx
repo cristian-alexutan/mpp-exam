@@ -77,7 +77,33 @@ function Sidebar({ articles, selectedId, onSelect, user, onLogin, onLogout, onOp
   )
 }
 
-function Landing() {
+function Recommendations({ user, onSelect }) {
+  const [recs, setRecs] = useState([])
+
+  useEffect(() => {
+    if (!user || user.role !== 'user') return
+    apiFetch('/api/recommendations')
+      .then(r => r.ok ? r.json() : [])
+      .then(setRecs)
+  }, [user])
+
+  if (!user || user.role !== 'user' || recs.length === 0) return null
+
+  return (
+    <div className="recommendations">
+      <h3 className="recommendations-title">Recomandate pentru tine</h3>
+      <div className="recommendations-list">
+        {recs.map(a => (
+          <button key={a.id} className="recommendation-item" onClick={() => onSelect(a.id)}>
+            {a.title}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function Landing({ user, onSelect }) {
   return (
     <div className="landing">
       <div className="landing-logo"><Logo /><Logo /><Logo /></div>
@@ -91,6 +117,7 @@ function Landing() {
       <div className="landing-warning">
         ⚠ Conținutul acestui ziar poate provoca trezire la realitate. Citiți pe propria răspundere.
       </div>
+      <Recommendations user={user} onSelect={onSelect} />
     </div>
   )
 }
@@ -307,7 +334,7 @@ export default function App() {
       <main className="main">
         {selectedId
           ? <ArticleDetail id={selectedId} user={user} onBack={() => setSelectedId(null)} />
-          : <Landing />
+          : <Landing user={user} onSelect={setSelectedId} />
         }
       </main>
     </div>

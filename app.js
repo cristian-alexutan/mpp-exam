@@ -11,6 +11,7 @@ const { createRouter: commentCreateRouter, commentRouter } = require('./routes/c
 const reactionRouter = require('./routes/reactions');
 const adminRouter = require('./routes/admin');
 const articleCommentRouter = require('./routes/article-comments');
+const recommendationRouter = require('./routes/recommendations');
 
 function createApp(db) {
   const app = express();
@@ -33,6 +34,7 @@ function createApp(db) {
   app.use('/api/articles/:articleId/react', reactionRouter);
   app.use('/api/articles/:articleId/user-comments', articleCommentRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api/recommendations', recommendationRouter);
 
   return app;
 }

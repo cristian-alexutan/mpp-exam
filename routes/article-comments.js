@@ -1,35 +1,41 @@
 const express = require('express');
-const { execSync } = require('child_process');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
+const OLLAMA_URL = 'http://localhost:11434/api/generate';
+const MODEL = 'llama3.2';
 const VALID_SENTIMENTS = ['positive', 'negative', 'neutral', 'mixed', 'sarcastic'];
 
-function analyzeSentiment(text) {
+async function analyzeSentiment(text) {
   try {
-    // Sanitize for safe shell embedding: replace " and control chars
-    const safe = text.replace(/["\r\n`]/g, ' ').trim();
-
     const prompt =
-      `Classify the sentiment of this comment with exactly one word from: ` +
-      `positive, negative, neutral, mixed, sarcastic. ` +
-      `Positive = genuinely supportive. Negative = critical or upset. ` +
-      `Neutral = factual or indifferent. Mixed = both positive and negative. ` +
-      `Sarcastic = ironic or mocking tone. ` +
-      `Reply with the single word only, no punctuation. Comment: ${safe}`;
+      'Classify the sentiment of the following comment with exactly one word from this list: ' +
+      'positive, negative, neutral, mixed, sarcastic.\n' +
+      'positive = genuinely supportive or happy.\n' +
+      'negative = critical, upset, or disappointed.\n' +
+      'neutral = factual or indifferent.\n' +
+      'mixed = both positive and negative elements.\n' +
+      'sarcastic = ironic or mocking tone.\n' +
+      'Reply with ONLY the single classification word, nothing else.\n\n' +
+      'Comment: ' + text;
 
-    const output = execSync(`opencode run "${prompt}"`, {
-      encoding: 'utf8',
-      timeout: 30000,
+    const res = await fetch(OLLAMA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: MODEL, prompt, stream: false }),
+      signal: AbortSignal.timeout(30000),
     });
 
-    // Search the entire output for any valid sentiment word
-    const lower = output.toLowerCase();
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const lower = (data.response || '').toLowerCase();
+
     for (const s of VALID_SENTIMENTS) {
       if (lower.includes(s)) return s;
     }
     return null;
   } catch (err) {
-    console.error('[sentiment] error:', err.message);
+    console.error('[sentiment] ollama error:', err.message);
     return null;
   }
 }
@@ -53,7 +59,7 @@ router.get('/', requireAuth, (req, res) => {
   res.json(comments);
 });
 
-router.post('/', requireAuth, requireRole('user'), (req, res) => {
+router.post('/', requireAuth, requireRole('user'), async (req, res) => {
   const { text } = req.body;
   if (!text || typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'Textul comentariului este obligatoriu' });
@@ -66,7 +72,7 @@ router.post('/', requireAuth, requireRole('user'), (req, res) => {
   const article = db.prepare('SELECT id FROM articles WHERE id = ?').get(req.params.articleId);
   if (!article) return res.status(404).json({ error: 'Not found' });
 
-  const sentiment = analyzeSentiment(text.trim());
+  const sentiment = await analyzeSentiment(text.trim());
   console.log('[sentiment]', JSON.stringify(text.trim().slice(0, 60)), '->', sentiment);
 
   const { lastInsertRowid: id } = db.prepare(
